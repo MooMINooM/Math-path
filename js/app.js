@@ -3,7 +3,7 @@ import { login, logout, signup, getCurrentUser } from './auth.js';
 import { saveTestResult, getTestHistory } from './db.js';
 import { MathGame } from './game.js';
 import { switchTab, drawSpiderChart } from './ui.js';
-import { supabase } from './config.js';
+// import { supabase } from './config.js'; // ไม่ได้ใช้โดยตรงในไฟล์นี้แล้ว
 
 const game = new MathGame();
 let timerInterval = null;
@@ -56,7 +56,14 @@ function setupEventListeners() {
 
     // Level Selection
     document.querySelectorAll('.level-card').forEach(card => {
-        card.addEventListener('click', () => startTest(card.getAttribute('data-level')));
+        // แก้ไขให้รองรับ async startTest
+        card.addEventListener('click', async () => {
+             const btn = card.querySelector('button');
+             const originalText = btn.textContent;
+             btn.textContent = 'กำลังโหลด...'; // Feedback ให้ผู้ใช้รู้ว่ากำลังโหลด
+             await startTest(card.getAttribute('data-level'));
+             btn.textContent = originalText;
+        });
     });
 
     // Quit Test
@@ -101,12 +108,15 @@ async function handleLogout() {
 }
 
 // --- Game Logic ---
-function startTest(level) {
-    game.start(level);
+// 1. เปลี่ยนเป็น Async Function
+async function startTest(level) {
+    // เพิ่มการรอ (await) เพราะ game.start ตอนนี้ต้องไปดึงข้อมูลจาก Supabase
+    await game.start(level);
+    
     switchTab('test');
     
     const titles = { easy: 'แบบฝึกหัดง่าย 😊', medium: 'แบบฝึกหัดปานกลาง 🤔', hard: 'แบบฝึกหัดยาก 🤓' };
-    document.getElementById('test-level-title').textContent = titles[level];
+    document.getElementById('test-level-title').textContent = titles[level] || 'แบบฝึกหัด';
     
     updateQuestionUI();
     startTimer();
@@ -123,10 +133,39 @@ function startTimer() {
     }, 1000);
 }
 
+// 2. ปรับปรุงการแสดงผลโจทย์ (รองรับ Text และ Image)
 function updateQuestionUI() {
     const q = game.getCurrentQuestion();
     document.getElementById('current-question-num').textContent = game.currentIndex + 1;
-    document.getElementById('question-display').textContent = `${q.num1} + ${q.num2} = ?`;
+    
+    // จัดการส่วนแสดงโจทย์
+    const displayDiv = document.getElementById('question-display');
+    displayDiv.innerHTML = ''; // เคลียร์ของเก่า
+
+    // กรณีมีรูปภาพ
+    if (q.imageUrl) {
+        const img = document.createElement('img');
+        img.src = q.imageUrl;
+        img.className = 'mx-auto max-h-48 object-contain mb-4 rounded-lg shadow-sm';
+        displayDiv.appendChild(img);
+    }
+
+    // กรณีมีข้อความโจทย์ (ใช้ q.questionText ตามโครงสร้างใหม่)
+    const textP = document.createElement('div');
+    textP.textContent = q.questionText;
+    // ถ้ามีสมการคณิตศาสตร์ (Math Expression)
+    if (q.mathExpression) {
+        // ถ้าอนาคตใส่ KaTeX ก็ render ตรงนี้
+        textP.textContent += ` ${q.mathExpression}`; 
+    }
+    
+    // ปรับขนาดตัวอักษรตามเนื้อหา
+    if (q.questionText.length > 20 || q.imageUrl) {
+        textP.className = 'text-2xl font-bold text-gray-800 mb-6';
+    } else {
+        textP.className = 'text-6xl font-bold text-purple-600 mb-8';
+    }
+    displayDiv.appendChild(textP);
     
     // Progress Bar
     const progress = (game.currentIndex / 10) * 100;
@@ -135,17 +174,21 @@ function updateQuestionUI() {
     // Options
     const container = document.getElementById('answer-options');
     container.innerHTML = '';
-    q.options.forEach(opt => {
+    
+    // Loop สร้างปุ่มตัวเลือก
+    q.options.forEach((opt, index) => {
         const btn = document.createElement('button');
-        btn.className = 'number-card bg-gradient-to-br from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white text-4xl font-bold py-8 rounded-2xl shadow-lg transition-all';
+        btn.className = 'number-card bg-gradient-to-br from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white text-2xl md:text-4xl font-bold py-6 rounded-2xl shadow-lg transition-all break-words'; // ปรับ Text size ให้ยืดหยุ่น
         btn.textContent = opt;
-        btn.onclick = () => handleAnswer(opt, btn);
+        // 3. ส่งทั้ง index และ value ไปตรวจสอบ
+        btn.onclick = () => handleAnswer(index, opt, btn);
         container.appendChild(btn);
     });
 }
 
-function handleAnswer(selected, btnElement) {
-    const isCorrect = game.checkAnswer(selected);
+function handleAnswer(index, value, btnElement) {
+    // เรียก checkAnswer แบบใหม่ที่รองรับทั้ง index และ value
+    const isCorrect = game.checkAnswer(index, value);
     
     // UI Feedback
     const buttons = document.querySelectorAll('#answer-options button');
