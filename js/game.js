@@ -10,105 +10,75 @@ export class MathGame {
         this.isLoading = false;
     }
 
-    // เปลี่ยนเป็น Async เพื่อรอโหลดข้อมูล
+    // เริ่มเกม: ดึงข้อมูลจาก DB เท่านั้น ไม่มีการสุ่มเองแล้ว
     async start(level) {
         this.isLoading = true;
         this.level = level;
         this.currentIndex = 0;
         this.correctCount = 0;
-        this.startTime = Date.now();
         this.questions = [];
+        this.startTime = Date.now();
 
         try {
-            // 1. พยายามดึงโจทย์จาก Supabase ก่อน
-            const dbQuestions = await this.fetchQuestionsFromDB(level);
+            console.log(`กำลังโหลดข้อสอบระดับ: ${level}...`);
             
-            if (dbQuestions && dbQuestions.length > 0) {
-                // ถ้ามีข้อมูลใน DB ให้ใช้ข้อมูลนั้น
-                this.questions = this.shuffleArray(dbQuestions).slice(0, 10);
-            } else {
-                // 2. ถ้าไม่มีข้อมูลใน DB ให้ใช้ระบบสุ่มเลขแบบเดิม (Fallback)
-                console.log("Using fallback generator");
-                this.questions = this.generateFallbackQuestions(level);
+            // เช็คก่อนว่า config เชื่อมต่อได้ไหม
+            if (!supabase) {
+                throw new Error("ไม่พบการตั้งค่า Supabase กรุณาตรวจสอบไฟล์ config.js");
             }
+
+            // ดึงโจทย์จากตาราง 'advanced_questions'
+            const { data, error } = await supabase
+                .from('advanced_questions')
+                .select('*')
+                .eq('level', level);
+
+            if (error) {
+                throw error;
+            }
+
+            if (data && data.length > 0) {
+                // แปลงข้อมูลจาก DB ให้เข้ากับโครงสร้างที่แอปใช้
+                const formattedQuestions = data.map(q => ({
+                    id: q.id,
+                    questionText: q.question_text,
+                    mathExpression: q.math_expression,
+                    imageUrl: q.question_image_url,
+                    options: q.options,         // Array JSON เช่น ["ก", "ข", "ค"]
+                    correctIndex: q.correct_option_index, // int เช่น 0
+                    explanation: q.explanation
+                }));
+
+                // สุ่มลำดับข้อ และตัดมาแค่ 10 ข้อ (หรือทั้งหมดที่มีถ้าไม่ถึง 10)
+                this.questions = this.shuffleArray(formattedQuestions).slice(0, 10);
+                
+                console.log(`โหลดข้อสอบสำเร็จ: ${this.questions.length} ข้อ`);
+            } else {
+                // กรณีไม่พบข้อมูล: ตรวจสอบเพิ่มเติมเพื่อแจ้งสาเหตุที่ชัดเจนขึ้น
+                console.warn(`ไม่พบข้อสอบ level: ${level}`);
+                
+                // ลองเช็คว่ามีข้อมูลในตารางบ้างไหม (โดยไม่กรอง Level)
+                const { count } = await supabase
+                    .from('advanced_questions')
+                    .select('*', { count: 'exact', head: true });
+
+                let errorMsg = `ไม่พบข้อสอบระดับ "${level}" ในระบบฐานข้อมูล`;
+                
+                if (count === null || count === 0) {
+                     errorMsg += `\n⚠️ สาเหตุที่เป็นไปได้: \n1. ตารางยังว่างเปล่า (ลืม Insert ข้อมูล)\n2. ติดสิทธิ์ RLS (ลองรันคำสั่ง SQL: ALTER TABLE advanced_questions DISABLE ROW LEVEL SECURITY;)`;
+                } else {
+                     errorMsg += `\nℹ️ (พบข้อมูลในตารางทั้งหมด ${count} ข้อ แต่ไม่มีของระดับ "${level}")\nกรุณาเพิ่มโจทย์ที่มี level = '${level}'`;
+                }
+                
+                alert(errorMsg);
+            }
+
         } catch (error) {
-            console.error("Error starting game:", error);
-            this.questions = this.generateFallbackQuestions(level);
+            console.error("Critical Error:", error);
+            alert("เกิดข้อผิดพลาดในการโหลดข้อสอบ:\n" + error.message);
         } finally {
             this.isLoading = false;
         }
-    }
-
-    // ฟังก์ชันดึงข้อมูลจาก Supabase
-    async fetchQuestionsFromDB(level) {
-        // สมมติว่าตารางชื่อ 'advanced_questions' ตามที่คุยกัน
-        const { data, error } = await supabase
-            .from('advanced_questions')
-            .select('*')
-            .eq('level', level)
-            .eq('is_active', true);
-
-        if (error) {
-            console.warn("Could not fetch from DB, using fallback:", error.message);
-            return [];
-        }
-
-        // แปลงข้อมูลจาก DB ให้เข้ากับ Format ที่แอปใช้
-        return data.map(q => ({
-            id: q.id,
-            type: 'db', // ระบุว่าเป็นโจทย์จาก DB
-            questionText: q.question_text, // "จงหาค่าของ..."
-            mathExpression: q.math_expression, // "x^2 + 2x + 1 = 0" (ถ้ามี)
-            imageUrl: q.question_image_url, // รูปประกอบ (ถ้ามี)
-            options: q.options, // Array ["x=1", "x=-1", ...]
-            correctIndex: q.correct_option_index, // 0, 1, 2...
-            explanation: q.explanation // คำอธิบายเฉลย
-        }));
-    }
-
-    // ระบบสุ่มเลขเดิม (เก็บไว้เป็นอะไหล่สำรอง)
-    generateFallbackQuestions(level) {
-        const questions = [];
-        for (let i = 0; i < 10; i++) {
-            let num1, num2;
-            if (level === 'easy') {
-                num1 = Math.floor(Math.random() * 9) + 1;
-                num2 = Math.floor(Math.random() * 9) + 1;
-            } else if (level === 'medium') {
-                num1 = Math.floor(Math.random() * 10) + 10;
-                num2 = Math.floor(Math.random() * 10) + 1;
-            } else {
-                num1 = Math.floor(Math.random() * 30) + 20;
-                num2 = Math.floor(Math.random() * 30) + 1;
-            }
-
-            const answer = num1 + num2;
-            const options = this.generateOptions(answer);
-            const correctIndex = options.indexOf(answer);
-
-            questions.push({
-                type: 'generated',
-                questionText: `${num1} + ${num2} = ?`,
-                mathExpression: null, // โจทย์เลขธรรมดาไม่ต้องใช้ LaTeX
-                options: options,
-                correctIndex: correctIndex,
-                answerValue: answer // เก็บค่าจริงไว้เทียบ (เฉพาะโหมด generated)
-            });
-        }
-        return questions;
-    }
-
-    generateOptions(correct) {
-        const wrong = [];
-        while (wrong.length < 3) {
-            const offset = Math.floor(Math.random() * 6) - 3;
-            const val = correct + offset;
-            if (val !== correct && val > 0 && !wrong.includes(val)) {
-                wrong.push(val);
-            }
-        }
-        const options = [correct, ...wrong];
-        return this.shuffleArray(options);
     }
 
     shuffleArray(array) {
@@ -119,20 +89,13 @@ export class MathGame {
         return this.questions[this.currentIndex];
     }
 
-    // ตรวจคำตอบ (รับเป็น Index ของตัวเลือกที่ user กด)
-    checkAnswer(selectedIndex, selectedValue) {
-        const currentQ = this.questions[this.currentIndex];
-        
-        let isCorrect = false;
+    // ตรวจคำตอบ (รับ index ที่ user กด)
+    checkAnswer(selectedIndex) {
+        if (!this.questions[this.currentIndex]) return false;
 
-        if (currentQ.type === 'db') {
-            // ถ้าเป็นโจทย์ DB เทียบจาก Index เฉลย
-            isCorrect = (selectedIndex === currentQ.correctIndex);
-        } else {
-            // ถ้าเป็นโจทย์ Gen เทียบจากค่าตัวเลข
-            // (หรือจะใช้ Logic เดียวกันก็ได้ถ้า Gen ส่ง index มาถูก)
-            isCorrect = (parseInt(selectedValue) === currentQ.answerValue);
-        }
+        const currentQ = this.questions[this.currentIndex];
+        // เทียบ Index ที่ตอบ กับ Index เฉลยจาก DB
+        const isCorrect = (selectedIndex === currentQ.correctIndex);
 
         if (isCorrect) this.correctCount++;
         return isCorrect;
@@ -144,9 +107,11 @@ export class MathGame {
     }
 
     getScore() {
+        if (this.questions.length === 0) return { score: 0, correct: 0, total: 0, timeSpent: 0, level: this.level };
+
         const timeSpent = Math.floor((Date.now() - this.startTime) / 1000);
         return {
-            score: this.questions.length > 0 ? (this.correctCount / this.questions.length) * 100 : 0,
+            score: (this.correctCount / this.questions.length) * 100,
             correct: this.correctCount,
             total: this.questions.length,
             timeSpent: timeSpent,
