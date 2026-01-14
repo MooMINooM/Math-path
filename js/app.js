@@ -43,26 +43,30 @@ function showApp() {
 
     if (loginScreen) loginScreen.classList.add('hidden');
     if (mainApp) mainApp.classList.remove('hidden');
+    
     if (userDisplay && currentUser) {
+        // แสดงเฉพาะรหัส ID โดยตัดส่วนท้ายที่เป็นโดเมนออก
         userDisplay.textContent = currentUser.email.split('@')[0];
     }
     switchTab('select');
     loadHistoryData();
 }
 
-// --- Event Listeners (เพิ่มการตรวจสอบ null) ---
+// --- Event Listeners (Safe Access) ---
 function setupEventListeners() {
-    // Auth Forms
+    // ฟอร์มล็อกอิน
     const loginForm = document.getElementById('login-form');
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
+    // ปุ่มสมัครสมาชิก
     const btnSignup = document.getElementById('btn-signup');
     if (btnSignup) btnSignup.addEventListener('click', handleSignup);
 
+    // ปุ่มออกจากระบบ
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', handleLogout);
 
-    // Navigation
+    // ปุ่มนำทาง (Tabs)
     document.querySelectorAll('.nav-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const tab = e.currentTarget.getAttribute('data-tab');
@@ -71,7 +75,7 @@ function setupEventListeners() {
         });
     });
 
-    // Level Selection
+    // ปุ่มเลือกเลเวล
     document.querySelectorAll('.level-card').forEach(card => {
         card.addEventListener('click', async () => {
             const btn = card.querySelector('button');
@@ -84,6 +88,7 @@ function setupEventListeners() {
         });
     });
 
+    // ปุ่มยกเลิกการสอบ
     const btnQuit = document.getElementById('btn-quit-test');
     if (btnQuit) btnQuit.addEventListener('click', quitTest);
 }
@@ -91,21 +96,24 @@ function setupEventListeners() {
 // --- Auth Actions ---
 async function handleLogin(e) {
     e.preventDefault();
-    const emailEl = document.getElementById('email');
+    const studentIdEl = document.getElementById('student-id'); // ใช้ ID แทน Email ตามที่คุยกัน
     const passwordEl = document.getElementById('password');
     const errorDiv = document.getElementById('login-error');
 
-    if (!emailEl || !passwordEl) return;
+    if (!studentIdEl || !passwordEl) return;
 
-    const email = emailEl.value;
+    const studentId = studentIdEl.value.trim();
     const password = passwordEl.value;
+    
+    // แปลง ID เป็นรูปแบบ Email เพื่อให้ Supabase ยอมรับ
+    const fakeEmail = `${studentId}@mathpath.com`;
     
     if (errorDiv) errorDiv.classList.add('hidden');
     
-    const { error } = await login(email, password);
+    const { error } = await login(fakeEmail, password);
     if (error) {
         if (errorDiv) {
-            errorDiv.textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง: " + error.message;
+            errorDiv.textContent = "รหัส ID หรือรหัสผ่านไม่ถูกต้อง";
             errorDiv.classList.remove('hidden');
         }
     } else {
@@ -114,21 +122,23 @@ async function handleLogin(e) {
 }
 
 async function handleSignup() {
-    const emailEl = document.getElementById('email');
+    const studentIdEl = document.getElementById('student-id');
     const passwordEl = document.getElementById('password');
     
-    if (!emailEl || !passwordEl) return;
+    if (!studentIdEl || !passwordEl) return;
     
-    const email = emailEl.value;
+    const studentId = studentIdEl.value.trim();
     const password = passwordEl.value;
     
-    if(!email || !password) return alert('กรุณากรอกอีเมลและรหัสผ่าน');
+    if(!studentId || !password) return alert('กรุณากรอกรหัส ID และรหัสผ่าน');
 
-    const { error } = await signup(email, password);
+    const fakeEmail = `${studentId}@mathpath.com`;
+
+    const { error } = await signup(fakeEmail, password);
     if(error) {
         alert("สมัครไม่สำเร็จ: " + error.message);
     } else {
-        alert("สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลหรือลองล็อกอิน");
+        alert("สมัครสมาชิกสำเร็จ! กรุณาลองล็อกอินด้วย ID นี้");
     }
 }
 
@@ -136,7 +146,7 @@ async function handleLogout() {
     await logout();
     currentUser = null;
     showLogin();
-    window.location.reload(); // เคลียร์สถานะค้างในหน่วยความจำ
+    window.location.reload(); // รีโหลดเพื่อล้างสถานะ Session เก่า
 }
 
 // --- Game Logic ---
@@ -144,7 +154,7 @@ async function startTest(level) {
     await game.start(level);
     switchTab('test');
     
-    const titles = { easy: 'แบบฝึกหัดง่าย 😊', medium: 'แบบฝึกหัดปานกลาง 🤔', hard: 'แบบฝึกหัดยาก 🤓' };
+    const titles = { easy: 'แบบฝึกหัดพื้นฐาน 😊', medium: 'แบบฝึกหัดปานกลาง 🤔', hard: 'แบบฝึกหัดท้าทาย 🤓' };
     const titleEl = document.getElementById('test-level-title');
     if (titleEl) titleEl.textContent = titles[level] || 'แบบฝึกหัด';
     
@@ -183,7 +193,7 @@ function updateQuestionUI() {
 
         const textP = document.createElement('div');
         textP.textContent = q.questionText + (q.mathExpression ? ` ${q.mathExpression}` : '');
-        textP.className = q.questionText.length > 20 || q.imageUrl ? 'text-2xl font-bold text-gray-800 mb-6' : 'text-6xl font-bold text-purple-600 mb-8';
+        textP.className = 'text-2xl font-bold text-gray-800 mb-6';
         displayDiv.appendChild(textP);
     }
     
@@ -198,7 +208,7 @@ function updateQuestionUI() {
         container.innerHTML = '';
         q.options.forEach((opt, index) => {
             const btn = document.createElement('button');
-            btn.className = 'number-card bg-gradient-to-br from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white text-2xl md:text-4xl font-bold py-6 rounded-2xl shadow-lg transition-all break-words';
+            btn.className = 'number-card bg-gradient-to-br from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white text-xl md:text-2xl font-bold py-4 px-6 rounded-2xl shadow-lg transition-all break-words';
             btn.textContent = opt;
             btn.onclick = () => handleAnswer(index, btn);
             container.appendChild(btn);
@@ -228,16 +238,14 @@ async function handleAnswer(selectedIndex, btnElement) {
 
 async function finishTest() {
     clearInterval(timerInterval);
-    const result = game.getScore();
+    const result = game.getScore(); // ดึงคะแนนรวมและคะแนนแยก 6 แกน
     
     const scoreEl = document.getElementById('result-score');
     const percentEl = document.getElementById('result-percent');
-    const emojiEl = document.getElementById('result-emoji');
     const modal = document.getElementById('result-modal');
 
     if (scoreEl) scoreEl.textContent = `${result.correct}/${result.total}`;
     if (percentEl) percentEl.textContent = `${Math.round(result.score)}%`;
-    if (emojiEl) emojiEl.textContent = result.score >= 80 ? '🎉' : result.score >= 60 ? '😊' : '💪';
     if (modal) modal.classList.remove('hidden');
 
     if (currentUser) {
@@ -248,12 +256,13 @@ async function finishTest() {
             total_questions: result.total,
             correct_answers: result.correct,
             time_spent: result.timeSpent,
-            numerical: result.numerical,
-            algebraic: result.algebraic,
-            spatial: result.spatial,
-            data: result.data,
-            logical: result.logical,
-            applied: result.applied
+            // บันทึกคะแนนแยกตาม 6 แกนทักษะ
+            numerical: result.numerical || 0,
+            algebraic: result.algebraic || 0,
+            spatial: result.spatial || 0,
+            data: result.data || 0,
+            logical: result.logical || 0,
+            applied: result.applied || 0
         });
         await loadHistoryData();
     }
@@ -265,22 +274,7 @@ async function loadHistoryData() {
     const { data: history } = await getTestHistory(currentUser.id);
     if (!history) return;
 
-    // Mini History
-    const miniContainer = document.getElementById('mini-history');
-    if (miniContainer) {
-        if (history.length === 0) {
-            miniContainer.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีประวัติ</p>';
-        } else {
-            miniContainer.innerHTML = history.slice(0, 3).map(h => `
-                <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-200">
-                    <span class="font-bold text-gray-700">${h.test_level}</span>
-                    <span class="font-bold ${h.score >= 60 ? 'text-green-600' : 'text-red-600'}">${Math.round(h.score)}%</span>
-                </div>
-            `).join('');
-        }
-    }
-
-    // Spider Chart Calculation
+    // คำนวณค่าเฉลี่ยสะสม 6 แกนทักษะ
     const skillSums = { numerical: 0, algebraic: 0, spatial: 0, data: 0, logical: 0, applied: 0 };
     const skillCounts = { numerical: 0, algebraic: 0, spatial: 0, data: 0, logical: 0, applied: 0 };
 
@@ -298,15 +292,31 @@ async function loadHistoryData() {
         avgScores[key] = skillCounts[key] > 0 ? Math.round(skillSums[key] / skillCounts[key]) : 0;
     });
 
+    // วาดกราฟใยแมงมุมจากค่าเฉลี่ยสะสม
     drawSpiderChart(avgScores);
 
-    // Stats & Grade
+    // แสดงประวัติสั้นๆ ในหน้าแรก
+    const miniContainer = document.getElementById('mini-history');
+    if (miniContainer) {
+        if (history.length === 0) {
+            miniContainer.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีประวัติการทำข้อสอบ</p>';
+        } else {
+            miniContainer.innerHTML = history.slice(0, 3).map(h => `
+                <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-200">
+                    <span class="font-bold text-gray-700">ระดับ: ${h.test_level}</span>
+                    <span class="font-bold ${h.score >= 60 ? 'text-green-600' : 'text-red-600'}">${Math.round(h.score)}%</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    // สถิติและเกรดเฉลี่ยรวม
     const overallAvg = history.length > 0 ? Math.round(history.reduce((a, b) => a + b.score, 0) / history.length) : 0;
     const statsEl = document.getElementById('overall-stats');
     if (statsEl) {
         statsEl.innerHTML = `
-            <div class="flex justify-between p-3 bg-green-50 rounded-xl"><span class="text-gray-700">จำนวนครั้ง:</span> <b>${history.length}</b></div>
-            <div class="flex justify-between p-3 bg-blue-50 rounded-xl"><span class="text-gray-700">คะแนนเฉลี่ย:</span> <b>${overallAvg}%</b></div>
+            <div class="flex justify-between p-3 bg-green-50 rounded-xl"><span>จำนวนครั้งที่ทำ:</span> <b>${history.length} ครั้ง</b></div>
+            <div class="flex justify-between p-3 bg-blue-50 rounded-xl"><span>คะแนนเฉลี่ยรวม:</span> <b>${overallAvg}%</b></div>
         `;
     }
 
@@ -314,6 +324,18 @@ async function loadHistoryData() {
     const gradeAvgEl = document.getElementById('grade-avg-score');
     if (gradeEl) gradeEl.textContent = calculateGrade(overallAvg);
     if (gradeAvgEl) gradeAvgEl.textContent = overallAvg;
+
+    // ตารางประวัติเต็มรูปแบบ
+    const tableBody = document.querySelector('#history-table tbody');
+    if (tableBody) {
+        tableBody.innerHTML = history.map(h => `
+            <tr class="bg-white border-b hover:bg-purple-50">
+                <td class="px-4 py-3">${h.test_level}</td>
+                <td class="px-4 py-3 font-bold ${h.score >= 60 ? 'text-green-600' : 'text-red-600'}">${Math.round(h.score)}%</td>
+                <td class="px-4 py-3 text-xs text-gray-500">${new Date(h.created_at).toLocaleDateString('th-TH')}</td>
+            </tr>
+        `).join('');
+    }
 }
 
 function calculateGrade(score) {
