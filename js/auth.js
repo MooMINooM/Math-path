@@ -2,9 +2,7 @@
 import { supabase } from './config.js';
 
 /**
- * ฟังก์ชันสมัครสมาชิก
- * @param {string} email - อีเมล (ในระบบเราจะส่งเป็น ID@mathpath.com)
- * @param {string} password - รหัสผ่าน
+ * สมัครสมาชิกโดยใช้ ID (ระบบจะแปลงเป็น ID@mathpath.com ให้อัตโนมัติใน app.js)
  */
 export async function signup(email, password) {
     const { data, error } = await supabase.auth.signUp({
@@ -15,20 +13,18 @@ export async function signup(email, password) {
 }
 
 /**
- * ฟังก์ชันเข้าสู่ระบบ
- * @param {string} email - อีเมล (ในระบบเราจะส่งเป็น ID@mathpath.com)
- * @param {string} password - รหัสผ่าน
+ * เข้าสู่ระบบด้วย ID
  */
 export async function login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
-        password: password,
+        password: password
     });
     return { data, error };
 }
 
 /**
- * ฟังก์ชันออกจากระบบ
+ * ออกจากระบบ
  */
 export async function logout() {
     const { error } = await supabase.auth.signOut();
@@ -36,27 +32,14 @@ export async function logout() {
 }
 
 /**
- * ตรวจสอบสถานะผู้ใช้ปัจจุบัน
- * @returns {Object|null} ข้อมูลผู้ใช้ หรือ null ถ้าไม่ได้ล็อกอิน
+ * ดึงข้อมูลผู้ใช้ปัจจุบัน
  */
 export async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
-}
-
-/**
- * ตรวจสอบ Session ปัจจุบัน (ใช้สำหรับกรณีต้องการข้อมูล Token)
- */
-export async function getSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    return { session, error };
-}
-
-/**
- * ฟังก์ชันสำหรับรีเซ็ตรหัสผ่าน (เผื่อใช้ในอนาคต)
- * @param {string} email 
- */
-export async function resetPassword(email) {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
-    return { data, error };
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) return null;
+        return user;
+    } catch (err) {
+        return null;
+    }
 }
