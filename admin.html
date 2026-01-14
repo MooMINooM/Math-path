@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ระบบจัดการนักเรียน (สำหรับครู)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Mali', cursive; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-8 relative">
+        
+        <button onclick="logoutAndGoBack()" class="absolute top-8 right-8 bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-bold flex items-center gap-2 cursor-pointer">
+            📱 ออกจากระบบ & ไปหน้าแอพ ➡️
+        </button>
+
+        <h1 class="text-3xl font-bold text-purple-700 mb-6 flex items-center gap-3">
+            🛠️ ระบบจัดการข้อมูลนักเรียน
+        </h1>
+
+        <div class="bg-yellow-50 p-4 rounded-xl border-2 border-yellow-200 mb-8 text-sm">
+            <h3 class="font-bold text-yellow-800 mb-2">⚠️ การตั้งค่า (Service Role Key)</h3>
+            <div class="grid gap-2 mt-3">
+                <input type="text" id="supabase-url" placeholder="Supabase URL" class="w-full p-2 border rounded">
+                <input type="password" id="service-key" placeholder="Service Role Key (secret)" class="w-full p-2 border rounded">
+                <button onclick="connectAdmin()" class="bg-purple-600 text-white py-2 rounded hover:bg-purple-700">เชื่อมต่อระบบ</button>
+            </div>
+        </div>
+
+        <div id="admin-panel" class="hidden space-y-8">
+            
+            <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-blue-800 mb-2">📥 นำเข้าจากตาราง Students</h2>
+                        <p class="text-blue-600 text-sm">ระบบจะใช้ <b>รหัสผ่าน</b> จากในตาราง (ถ้าไม่มีจะใช้ 123456)</p>
+                    </div>
+                    <button onclick="syncFromTable()" id="btn-sync" class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-bold shadow-lg flex items-center gap-2">
+                        🚀 สร้าง User จากตาราง
+                    </button>
+                </div>
+                <div id="sync-log" class="mt-4 text-sm text-gray-600 max-h-40 overflow-y-auto bg-white p-2 rounded border hidden"></div>
+            </div>
+
+            <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-200">
+                <h2 class="text-xl font-bold text-green-800 mb-4">➕ เพิ่มทีละคน (Manual)</h2>
+                <div class="flex flex-wrap gap-4 items-end">
+                    <input type="text" id="new-id" class="p-2 border rounded w-28" placeholder="รหัสนักเรียน">
+                    <input type="text" id="new-name" class="p-2 border rounded w-40" placeholder="ชื่อ-สกุล">
+                    <input type="text" id="new-pass" class="p-2 border rounded w-32" placeholder="รหัสผ่าน (ถ้ามี)">
+                    
+                    <select id="new-grade" class="p-2 border rounded w-24 bg-white">
+                        <option value="P.1">ป.1</option> <option value="P.2">ป.2</option> <option value="P.3">ป.3</option>
+                        <option value="P.4">ป.4</option> <option value="P.5">ป.5</option> <option value="P.6">ป.6</option>
+                        <option value="M.1">ม.1</option> <option value="M.2">ม.2</option> <option value="M.3">ม.3</option>
+                    </select>
+                    <button onclick="createSingleUser()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold">บันทึก</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">📋 รายชื่อในระบบ (Auth Users)</h2>
+                    <button onclick="fetchUsers()" class="text-purple-600">🔄 รีเฟรช</button>
+                </div>
+                <div class="overflow-x-auto bg-white border rounded-xl shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-purple-50 text-purple-800">
+                            <tr>
+                                <th class="p-4 border-b">รหัสนักเรียน</th>
+                                <th class="p-4 border-b">ชื่อ-สกุล</th>
+                                <th class="p-4 border-b">ชั้น (ปัจจุบัน)</th>
+                                <th class="p-4 border-b w-1/3">จัดการ / เลื่อนชั้น</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DOMAIN_SUFFIX = '@school.local';
+        let supabaseAdmin = null;
+
+        window.onload = () => {
+            if(localStorage.getItem('sb_url')) document.getElementById('supabase-url').value = localStorage.getItem('sb_url');
+            if(localStorage.getItem('sb_key')) document.getElementById('service-key').value = localStorage.getItem('sb_key');
+        }
+
+        // [แก้ไขจุดที่ 2] ฟังก์ชัน Logout ก่อนกลับ
+        function logoutAndGoBack() {
+            // ลูปเช็ค LocalStorage ทั้งหมด
+            const keysToKeep = ['sb_url', 'sb_key']; // เก็บค่าตั้งค่า Admin ไว้ (Url, Key)
+            
+            // ใช้เทคนิควนลูปย้อนกลับเพื่อลบ Session ของ Supabase ออก
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                // ถ้า Key ไม่ใช่ URL หรือ Service Key ของเรา ให้ลบทิ้งให้หมด (เพื่อล้าง Session login)
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                }
+            }
+            
+            // ดีดกลับไปหน้า index
+            window.location.href = 'index.html';
+        }
+
+        function connectAdmin() {
+            const url = document.getElementById('supabase-url').value.trim();
+            const key = document.getElementById('service-key').value.trim();
+            if (!url || !key) return alert('กรอกข้อมูลให้ครบ');
+            localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key);
+
+            try {
+                supabaseAdmin = supabase.createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+                document.getElementById('admin-panel').classList.remove('hidden');
+                fetchUsers();
+                alert('เชื่อมต่อสำเร็จ ✅');
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function syncFromTable() {
+            const btn = document.getElementById('btn-sync');
+            const logDiv = document.getElementById('sync-log');
+            
+            if(!confirm('ยืนยันสร้าง User จากตาราง students ทั้งหมด?')) return;
+
+            btn.textContent = '⏳ กำลังทำงาน...';
+            btn.disabled = true;
+            logDiv.classList.remove('hidden');
+            logDiv.innerHTML = 'เริ่มการซิงค์...<br>';
+
+            try {
+                const { data: students, error: dbError } = await supabaseAdmin.from('students').select('*');
+                if (dbError) throw dbError;
+
+                if (!students || students.length === 0) throw new Error('ไม่พบข้อมูลในตาราง students');
+
+                const { data: { users }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+                if (authError) throw authError;
+                
+                const existingEmails = new Set(users.map(u => u.email));
+                let createdCount = 0;
+
+                for (const student of students) {
+                    const email = student.student_id.trim() + DOMAIN_SUFFIX;
+                    const userPass = student.password && student.password.toString().trim() !== '' ? student.password.toString() : '123456';
+
+                    if (existingEmails.has(email)) {
+                        logDiv.innerHTML += `<span class="text-gray-400">ข้าม: ${student.student_id} (มีแล้ว)</span><br>`;
+                        continue;
+                    }
+
+                    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+                        email: email,
+                        password: userPass,
+                        email_confirm: true,
+                        user_metadata: { grade: student.grade, name: student.full_name }
+                    });
+
+                    if (createError) {
+                        logDiv.innerHTML += `<span class="text-red-500">Error ${student.student_id}: ${createError.message}</span><br>`;
+                    } else {
+                        logDiv.innerHTML += `<span class="text-green-600">สร้างสำเร็จ: ${student.student_id}</span><br>`;
+                        createdCount++;
+                    }
+                }
+                alert(`เสร็จสิ้น! สร้าง User ใหม่ ${createdCount} คน`);
+                fetchUsers();
+            } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); } 
+            finally { btn.textContent = '🚀 สร้าง User จากตาราง'; btn.disabled = false; }
+        }
+
+        async function fetchUsers() {
+            const tbody = document.getElementById('user-list');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">โหลดข้อมูล...</td></tr>';
+            
+            const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+            if (error) return alert(error.message);
+
+            const students = users.filter(u => u.email && u.email.endsWith(DOMAIN_SUFFIX));
+            students.sort((a, b) => a.email.localeCompare(b.email));
+
+            tbody.innerHTML = '';
+            students.forEach(u => {
+                const id = u.email.split('@')[0];
+                const meta = u.user_metadata || {};
+                const name = meta.name || '-';
+                const grade = meta.grade || 'P.1';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-4 font-bold text-gray-700">${id}</td>
+                        <td class="p-4 text-gray-600">${name}</td>
+                        <td class="p-4"><span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">${grade}</span></td>
+                        <td class="p-4 flex items-center gap-2">
+                            <select id="grade-${u.id}" class="border-2 border-purple-200 rounded p-1 text-sm bg-white">
+                                <option value="P.1" ${grade==='P.1'?'selected':''}>ป.1</option>
+                                <option value="P.2" ${grade==='P.2'?'selected':''}>ป.2</option>
+                                <option value="P.3" ${grade==='P.3'?'selected':''}>ป.3</option>
+                                <option value="P.4" ${grade==='P.4'?'selected':''}>ป.4</option>
+                                <option value="P.5" ${grade==='P.5'?'selected':''}>ป.5</option>
+                                <option value="P.6" ${grade==='P.6'?'selected':''}>ป.6</option>
+                                <option value="M.1" ${grade==='M.1'?'selected':''}>ม.1</option>
+                                <option value="M.2" ${grade==='M.2'?'selected':''}>ม.2</option>
+                                <option value="M.3" ${grade==='M.3'?'selected':''}>ม.3</option>
+                            </select>
+                            <button onclick="updateGrade('${u.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 font-bold">บันทึก</button>
+                            <button onclick="deleteUser('${u.id}')" class="bg-red-100 text-red-500 px-3 py-1 rounded text-sm hover:bg-red-200">ลบ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function updateGrade(uid) {
+            const newGrade = document.getElementById(`grade-${uid}`).value;
+            const btn = event.target;
+            btn.textContent = '...';
+            
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(
+                uid,
+                { user_metadata: { grade: newGrade } }
+            );
+
+            if (error) {
+                alert('แก้ไขไม่สำเร็จ: ' + error.message);
+                btn.textContent = 'บันทึก';
+            } else {
+                const row = btn.closest('tr');
+                const badge = row.querySelector('span');
+                badge.textContent = newGrade;
+                btn.textContent = 'เรียบร้อย';
+                setTimeout(() => btn.textContent = 'บันทึก', 1500);
+            }
+        }
+
+        async function createSingleUser() {
+            const id = document.getElementById('new-id').value.trim();
+            const name = document.getElementById('new-name').value.trim();
+            const passInput = document.getElementById('new-pass').value.trim();
+            const grade = document.getElementById('new-grade').value;
+
+            if (!id || !name) return alert('กรอกข้อมูลให้ครบ');
+            const password = passInput || '123456';
+
+            const { error } = await supabaseAdmin.auth.admin.createUser({
+                email: id + DOMAIN_SUFFIX,
+                password: password,
+                email_confirm: true,
+                user_metadata: { grade: grade, name: name }
+            });
+
+            if (error) alert(error.message);
+            else {
+                alert(`สร้างสำเร็จ! (รหัสผ่าน: ${password})`);
+                fetchUsers();
+                document.getElementById('new-id').value = '';
+                document.getElementById('new-name').value = '';
+                document.getElementById('new-pass').value = '';
+            }
+        }
+
+        async function deleteUser(uid) {
+            if(confirm('ยืนยันลบ?')) {
+                await supabaseAdmin.auth.admin.deleteUser(uid);
+                fetchUsers();
+            }
+        }
+    </script>
+</body>
+</html>

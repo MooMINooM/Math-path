@@ -1,0 +1,63 @@
+body {
+  box-sizing: border-box;
+  font-family: 'Mali', cursive;
+}
+
+.radar-container {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  aspect-ratio: 1;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.number-card {
+  transition: all 0.2s ease;
+}
+
+.number-card:hover {
+  transform: scale(1.05);
+}
+
+.correct-answer {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  animation: pulse 0.5s ease;
+}
+
+.wrong-answer {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  animation: shake 0.5s ease;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
