@@ -23,12 +23,13 @@
       <h1 class="text-2xl font-bold text-gray-800 mb-2">เข้าสู่ระบบการเรียนรู้</h1>
       <p class="text-purple-600 font-medium">Math Path: 6-Axis Mastery</p>
      </div>
+
      <form id="login-form" class="space-y-4">
       <div>
-       <label for="text" class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+       <label for="student-id" class="block text-sm font-medium text-gray-700 mb-1">รหัส ID ประจำตัว</label>
        <div class="relative">
-        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">📧</span> 
-        <input type="text" id="student_id" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="example@mail.com" required>
+        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">🆔</span> 
+        <input type="text" id="student-id" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="กรอกรหัส ID ของน้องๆ" required>
        </div>
       </div>
       <div>
@@ -40,11 +41,11 @@
       </div>
       <div id="login-error" class="hidden bg-red-50 border-2 border-red-200 rounded-xl p-3 text-red-600 text-sm text-center"></div>
       
-      <button type="submit" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg text-lg"> 
-       เข้าสู่ระบบ 🚀 
+      <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg text-lg"> 
+       เริ่มเรียนเลย 🚀 
       </button>
       <button type="button" id="btn-signup" class="w-full bg-white border-2 border-purple-200 text-purple-600 py-3 px-6 rounded-xl font-semibold hover:bg-purple-50 transition-all text-lg mt-2">
-       สมัครสมาชิกใหม่
+       สมัครสมาชิกด้วย ID นี้
       </button>
      </form>
     </div>
@@ -60,13 +61,13 @@
         </div>
         <div>
          <h1 class="text-xl font-bold text-gray-800">Math Path</h1>
-         <p class="text-sm text-purple-600">6-Axis Learning Mastery</p>
+         <p class="text-sm text-purple-600">วิเคราะห์พัฒนาการรายบุคคล</p>
         </div>
        </div>
        <div class="flex items-center gap-4">
         <div class="text-right hidden md:block">
          <p class="text-sm text-gray-600">สวัสดี 👋</p>
-         <p id="current-user-display" class="font-bold text-purple-600">User</p>
+         <p id="current-user-display" class="font-bold text-purple-600">ID-User</p>
         </div>
         <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-md"> ออกจากระบบ 🚪 </button>
        </div>
@@ -77,9 +78,9 @@
     <nav class="bg-white border-b-2 border-purple-100 sticky top-0 z-10 shadow-sm">
      <div class="max-w-7xl mx-auto px-4">
       <div class="flex gap-2 overflow-x-auto">
-       <button data-tab="select" class="nav-tab px-6 py-3 font-semibold whitespace-nowrap"> 🎯 เลือกบทเรียน </button> 
-       <button data-tab="progress" class="nav-tab px-6 py-3 font-semibold whitespace-nowrap"> 📊 พัฒนาการ 6 แกน </button> 
-       <button data-tab="grade" class="nav-tab px-6 py-3 font-semibold whitespace-nowrap"> 🏆 เกรดสะสม </button>
+       <button data-tab="select" class="nav-tab px-6 py-3 font-semibold text-purple-600 border-b-4 border-purple-500 bg-purple-50 whitespace-nowrap"> 🎯 เลือกแบบฝึกหัด </button> 
+       <button data-tab="progress" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 📊 พัฒนาการ 6 แกน </button> 
+       <button data-tab="grade" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 🏆 เกรดสะสม </button>
       </div>
      </div>
     </nav>
@@ -88,32 +89,32 @@
      
      <div id="content-select" class="tab-content fade-in">
       <div class="text-center mb-8">
-       <h2 class="text-3xl font-bold text-gray-800 mb-2">เลือกระดับความยาก 🎮</h2>
-       <p class="text-gray-600">วิเคราะห์ทักษะพื้นฐานเพื่อต่อยอดสู่ระดับที่สูงขึ้น</p>
+       <h2 class="text-3xl font-bold text-gray-800 mb-2">เลือกระดับความท้าทาย 🎮</h2>
+       <p class="text-gray-600">พัฒนาทักษะคณิตศาสตร์อย่างต่อเนื่องแบบไร้ขีดจำกัด</p>
       </div>
       <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-green-300 hover:shadow-2xl transition-all cursor-pointer" data-level="easy">
         <div class="text-center">
          <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">😊</div>
-         <h3 class="text-2xl font-bold text-green-600 mb-2">พื้นฐาน</h3>
-         <p class="text-gray-600 mb-4">เน้นความแม่นยำรายบุคคล</p>
-         <button class="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-md pointer-events-none">เริ่มทำข้อสอบ 🚀</button>
+         <h3 class="text-2xl font-bold text-green-600 mb-2">ง่าย</h3>
+         <p class="text-gray-600 mb-4">พื้นฐานจำนวนและพีชคณิต</p>
+         <button class="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มเลย 🚀</button>
         </div>
        </div>
        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-yellow-300 hover:shadow-2xl transition-all cursor-pointer" data-level="medium">
         <div class="text-center">
          <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤔</div>
          <h3 class="text-2xl font-bold text-yellow-600 mb-2">ปานกลาง</h3>
-         <p class="text-gray-600 mb-4">เริ่มใช้ตรรกะและการประยุกต์</p>
-         <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold shadow-md pointer-events-none">เริ่มทำข้อสอบ 🚀</button>
+         <p class="text-gray-600 mb-4">มิติสัมพันธ์และการให้เหตุผล</p>
+         <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มเลย 🚀</button>
         </div>
        </div>
        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-red-300 hover:shadow-2xl transition-all cursor-pointer" data-level="hard">
         <div class="text-center">
          <div class="w-20 h-20 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤓</div>
-         <h3 class="text-2xl font-bold text-red-600 mb-2">ท้าทาย</h3>
-         <p class="text-gray-600 mb-4">โจทย์ปัญหาซับซ้อน 6 แกน</p>
-         <button class="w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-xl font-bold shadow-md pointer-events-none">เริ่มทำข้อสอบ 🚀</button>
+         <h3 class="text-2xl font-bold text-red-600 mb-2">ยาก</h3>
+         <p class="text-gray-600 mb-4">การประยุกต์และโจทย์ปัญหาซับซ้อน</p>
+         <button class="w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มเลย 🚀</button>
         </div>
        </div>
       </div>
@@ -144,11 +145,11 @@
         </div>
        </div>
        
-       <div class="bg-white rounded-3xl shadow-2xl p-8 border-4 border-purple-300 mb-6 min-h-[400px] flex flex-col justify-center">
-        <div id="question-display" class="text-center mb-8">
+       <div class="bg-white rounded-3xl shadow-2xl p-8 border-4 border-purple-300 mb-6">
+        <div id="question-display" class="text-center min-h-[200px] flex flex-col justify-center">
          <div class="text-2xl font-bold text-gray-800">กำลังโหลดคำถาม...</div>
         </div>
-        <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto w-full"></div>
+        <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8"></div>
        </div>
        
        <div class="text-center">
@@ -160,31 +161,31 @@
      <div id="content-progress" class="tab-content hidden fade-in">
        <div class="grid lg:grid-cols-2 gap-6">
          <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
-           <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">🕸️ แผนภาพสมรรถนะ 6 ด้าน</h2>
+           <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">🕸️ วิเคราะห์ทักษะ 6 ด้าน</h2>
            <div class="radar-container mx-auto">
              <svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-full"></svg>
            </div>
          </div>
          <div class="space-y-4">
            <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-green-200">
-             <h3 class="text-lg font-bold text-gray-800 mb-4">📈 สถิติสะสมทั้งหมด</h3>
+             <h3 class="text-lg font-bold text-gray-800 mb-4">📈 สถิติสะสม</h3>
              <div id="overall-stats" class="space-y-3"></div>
            </div>
            <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-pink-200 overflow-hidden">
-             <h3 class="text-lg font-bold text-gray-800 mb-4">📋 ประวัติล่าสุด</h3>
-             <div class="overflow-x-auto">
-               <table class="w-full text-sm" id="history-table">
-                 <thead>
-                   <tr class="bg-purple-100 border-b-2 border-purple-300">
-                     <th class="px-4 py-2 text-left">ระดับ</th>
-                     <th class="px-4 py-2 text-left">คะแนน</th>
-                     <th class="px-4 py-2 text-left">วันที่</th>
-                   </tr>
-                 </thead>
-                 <tbody></tbody>
-               </table>
-             </div>
-           </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-4">📋 รายละเอียดประวัติ</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm" id="history-table">
+                <thead>
+                  <tr class="bg-purple-100 border-b-2 border-purple-300">
+                    <th class="px-4 py-2 text-left">ระดับ</th>
+                    <th class="px-4 py-2 text-left">คะแนน</th>
+                    <th class="px-4 py-2 text-left">วันที่</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
          </div>
        </div>
      </div>
@@ -192,13 +193,12 @@
      <div id="content-grade" class="tab-content hidden fade-in">
        <div class="max-w-4xl mx-auto text-center">
          <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 border-4 border-purple-300">
-           <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 ระดับความเชี่ยวชาญ</h2>
+           <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 ผลการเรียนรู้</h2>
            <div class="inline-block p-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl shadow-xl mb-6">
-             <p class="text-white text-lg mb-2">เกรดสะสมปัจจุบัน</p>
+             <p class="text-white text-lg mb-2">เกรดเฉลี่ยปัจจุบัน</p>
              <p class="text-8xl font-bold text-white" id="current-grade">-</p>
            </div>
-           <p class="text-xl text-gray-600 mb-2">คะแนนเฉลี่ยรวม: <span class="font-bold text-purple-600" id="grade-avg-score">0</span>%</p>
-           <p class="text-gray-500 text-sm italic mt-4">*คำนวณจากทุกครั้งที่ทำแบบฝึกหัดในระบบ</p>
+           <p class="text-xl text-gray-600">คะแนนเฉลี่ย: <span class="font-bold text-purple-600" id="grade-avg-score">0</span>%</p>
          </div>
        </div>
      </div>
@@ -210,18 +210,16 @@
   <div id="result-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full fade-in border-4 border-purple-300 text-center">
     <div id="result-emoji" class="text-8xl mb-4">🎉</div>
-    <h2 class="text-3xl font-bold text-gray-800 mb-2">เก่งมาก!</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-2">เสร็จสิ้นแล้ว!</h2>
     <div class="bg-purple-100 rounded-2xl p-6 mb-6 border-2 border-purple-300">
-     <p class="text-gray-700 mb-2">คะแนนที่คุณทำได้</p>
+     <p class="text-gray-700 mb-2">คะแนนที่ได้</p>
      <p class="text-6xl font-bold text-purple-600" id="result-score">0/10</p>
      <p class="text-2xl font-bold text-purple-600 mt-2" id="result-percent">0%</p>
     </div>
-    <button onclick="window.closeResultModal()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"> กลับสู่เมนูหลัก 🏠 </button>
+    <button onclick="window.closeResultModal()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"> กลับสู่หน้าหลัก 🏠 </button>
    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>
  </body>
 </html>
-
-
