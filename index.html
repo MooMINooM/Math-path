@@ -3,20 +3,15 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ข้อสอบคณิตศาสตร์ ป.1 การบวก</title>
-  <!-- Tailwind CSS -->
+  <title>เข้าสู่ระบบ (สำหรับนักเรียน)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
-  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="styles.css">
  </head>
  <body class="h-full w-full bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
   <div id="app" class="h-full w-full overflow-auto">
    
-   <!-- Login Screen -->
    <div id="login-screen" class="min-h-full flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full fade-in">
      <div class="text-center mb-6">
@@ -25,22 +20,22 @@
         🎓
        </div>
       </div>
-      <h1 class="text-2xl font-bold text-gray-800 mb-2">ข้อสอบคณิตศาสตร์ ป.1</h1>
-      <p class="text-purple-600 font-medium">เรื่อง: การบวก ➕</p>
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">เข้าสู่ระบบ</h1>
+      <p class="text-purple-600 font-medium">กรอกรหัสนักเรียนที่ครูให้</p>
      </div>
      <form id="login-form" class="space-y-4">
       <div>
-       <label for="email" class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+       <label for="student-id" class="block text-sm font-medium text-gray-700 mb-1">รหัสนักเรียน</label>
        <div class="relative">
-        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">📧</span> 
-        <input type="email" id="email" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="กรอกอีเมล" required>
+        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">🆔</span> 
+        <input type="text" id="student-id" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all" placeholder="เช่น 1001" required>
        </div>
       </div>
       <div>
        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
        <div class="relative">
         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">🔒</span> 
-        <input type="password" id="password" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" placeholder="กรอกรหัสผ่าน" required>
+        <input type="password" id="password" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all" placeholder="กรอกรหัสผ่าน" required>
        </div>
       </div>
       <div id="login-error" class="hidden bg-red-50 border-2 border-red-200 rounded-xl p-3 text-red-600 text-sm text-center"></div>
@@ -48,26 +43,19 @@
       <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg text-lg"> 
        เข้าสู่ระบบ 🚀 
       </button>
-      <button type="button" id="btn-signup" class="w-full bg-white border-2 border-purple-200 text-purple-600 py-3 px-6 rounded-xl font-semibold hover:bg-purple-50 transition-all text-lg mt-2">
-       สมัครสมาชิกใหม่
-      </button>
      </form>
     </div>
    </div>
 
-   <!-- Main App -->
    <div id="main-app" class="hidden h-full w-full">
-    <!-- Header -->
     <header class="bg-white shadow-lg border-b-4 border-purple-300">
      <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
        <div class="flex items-center gap-3">
-        <div class="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
-         📚
-        </div>
+        <div class="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">📚</div>
         <div>
-         <h1 class="text-xl font-bold text-gray-800">ข้อสอบคณิตศาสตร์ ป.1</h1>
-         <p class="text-sm text-purple-600">โรงเรียนประถมศึกษา</p>
+         <h1 class="text-xl font-bold text-gray-800">ห้องเรียนคณิตศาสตร์</h1>
+         <p class="text-sm text-purple-600">ฝึกฝนทักษะการคำนวณ</p>
         </div>
        </div>
        <div class="flex items-center gap-4">
@@ -75,138 +63,111 @@
          <p class="text-sm text-gray-600">สวัสดี 👋</p>
          <p id="current-user-display" class="font-bold text-purple-600">User</p>
         </div>
-        <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-md"> ออกจากระบบ 🚪 </button>
+        <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-md"> ออกจากระบบ </button>
        </div>
       </div>
      </div>
     </header>
 
-    <!-- Navigation -->
     <nav class="bg-white border-b-2 border-purple-100 sticky top-0 z-10 shadow-sm">
-     <div class="max-w-7xl mx-auto px-4">
-      <div class="flex gap-2 overflow-x-auto">
-       <button data-tab="select" class="nav-tab px-6 py-3 font-semibold text-purple-600 border-b-4 border-purple-500 bg-purple-50 whitespace-nowrap"> 🎯 เลือกแบบฝึกหัด </button> 
-       <button data-tab="progress" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 📊 พัฒนาการ </button> 
-       <button data-tab="grade" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 🏆 เกรด </button>
+      <div class="max-w-7xl mx-auto px-4">
+       <div class="flex gap-2 overflow-x-auto">
+        <button data-tab="select" class="nav-tab px-6 py-3 font-semibold text-purple-600 border-b-4 border-purple-500 bg-purple-50 whitespace-nowrap"> 🎯 เลือกแบบฝึกหัด </button> 
+        <button data-tab="progress" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 📊 พัฒนาการ </button> 
+        <button data-tab="grade" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 🏆 เกรด </button>
+       </div>
       </div>
-     </div>
-    </nav>
-
-    <!-- Content Area -->
+     </nav>
     <main class="max-w-7xl mx-auto px-4 py-6">
-     
-     <!-- Select Level Tab -->
      <div id="content-select" class="tab-content fade-in">
       <div class="text-center mb-8">
-       <h2 class="text-3xl font-bold text-gray-800 mb-2">เลือกระดับความยาก 🎮</h2>
-       <p class="text-gray-600">เลือกแบบฝึกหัดที่เหมาะกับตัวน้อง</p>
-      </div>
-      <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-       <!-- Easy -->
-       <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-green-300 hover:shadow-2xl transition-all cursor-pointer" data-level="easy">
-        <div class="text-center">
-         <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">😊</div>
-         <h3 class="text-2xl font-bold text-green-600 mb-2">ง่าย</h3>
-         <p class="text-gray-600 mb-4">บวกเลข 1-10</p>
-         <button class="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">เลือกระดับความยาก 🎮</h2>
+        <p class="text-gray-600">เลือกแบบฝึกหัดที่เหมาะกับความสามารถของคุณ</p>
+       </div>
+       <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-green-300 hover:shadow-2xl transition-all cursor-pointer" data-level="easy">
+         <div class="text-center">
+          <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">😊</div>
+          <h3 class="text-2xl font-bold text-green-600 mb-2">ง่าย</h3>
+          <p class="text-gray-600 mb-4">เริ่มต้นฝึกฝนพื้นฐาน</p>
+          <button class="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
+         </div>
+        </div>
+        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-yellow-300 hover:shadow-2xl transition-all cursor-pointer" data-level="medium">
+         <div class="text-center">
+          <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤔</div>
+          <h3 class="text-2xl font-bold text-yellow-600 mb-2">ปานกลาง</h3>
+          <p class="text-gray-600 mb-4">ฝึกฝนให้เชี่ยวชาญขึ้น</p>
+          <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
+         </div>
+        </div>
+        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-red-300 hover:shadow-2xl transition-all cursor-pointer" data-level="hard">
+         <div class="text-center">
+          <div class="w-20 h-20 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤓</div>
+          <h3 class="text-2xl font-bold text-red-600 mb-2">ยาก</h3>
+          <p class="text-gray-600 mb-4">ท้าทายความสามารถสูงสุด</p>
+          <button class="w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
+         </div>
         </div>
        </div>
-       <!-- Medium -->
-       <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-yellow-300 hover:shadow-2xl transition-all cursor-pointer" data-level="medium">
-        <div class="text-center">
-         <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤔</div>
-         <h3 class="text-2xl font-bold text-yellow-600 mb-2">ปานกลาง</h3>
-         <p class="text-gray-600 mb-4">บวกเลข 10-20</p>
-         <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
-        </div>
+       <div class="mt-8 bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">📜 ประวัติล่าสุด</h3>
+        <div id="mini-history" class="space-y-2"><p class="text-gray-500 text-center py-4">กำลังโหลดข้อมูล...</p></div>
        </div>
-       <!-- Hard -->
-       <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-red-300 hover:shadow-2xl transition-all cursor-pointer" data-level="hard">
-        <div class="text-center">
-         <div class="w-20 h-20 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤓</div>
-         <h3 class="text-2xl font-bold text-red-600 mb-2">ยาก</h3>
-         <p class="text-gray-600 mb-4">บวกเลข 20-50</p>
-         <button class="w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
-        </div>
-       </div>
-      </div>
-      
-      <!-- Recent History (Small) -->
-      <div class="mt-8 bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
-       <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">📜 ประวัติล่าสุด</h3>
-       <div id="mini-history" class="space-y-2">
-        <p class="text-gray-500 text-center py-4">กำลังโหลดข้อมูล...</p>
-       </div>
-      </div>
      </div>
 
-     <!-- Test Screen (Hidden by default) -->
      <div id="content-test" class="tab-content hidden fade-in">
-      <div class="max-w-3xl mx-auto">
-       <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 border-4 border-purple-300">
-        <div class="flex justify-between items-center">
-         <div>
-          <h3 id="test-level-title" class="text-2xl font-bold text-purple-600 mb-1">แบบฝึกหัด</h3>
-          <p class="text-gray-600">ข้อที่ <span id="current-question-num">1</span> จาก <span id="total-questions">10</span></p>
+        <div class="max-w-3xl mx-auto">
+         <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 border-4 border-purple-300">
+          <div class="flex justify-between items-center">
+           <div>
+            <h3 id="test-level-title" class="text-2xl font-bold text-purple-600 mb-1">แบบฝึกหัด</h3>
+            <p class="text-gray-600">ข้อที่ <span id="current-question-num">1</span> จาก <span id="total-questions">10</span></p>
+           </div>
+           <div class="text-right">
+            <p class="text-sm text-gray-600">⏱️ เวลา</p>
+            <p id="timer" class="text-3xl font-bold text-purple-600">0:00</p>
+           </div>
+          </div>
+          <div class="mt-4 bg-purple-100 rounded-full h-4 overflow-hidden">
+           <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+          </div>
          </div>
-         <div class="text-right">
-          <p class="text-sm text-gray-600">⏱️ เวลา</p>
-          <p id="timer" class="text-3xl font-bold text-purple-600">0:00</p>
+         <div class="bg-white rounded-3xl shadow-2xl p-8 border-4 border-purple-300 mb-6">
+          <div class="text-center mb-8">
+           <div id="question-display" class="text-6xl font-bold text-purple-600 mb-8">Loading...</div>
+          </div>
+          <div id="answer-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
+         </div>
+         <div class="text-center">
+          <button id="btn-quit-test" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-3 rounded-xl font-bold transition-all shadow-md"> ออกจากข้อสอบ 🚪 </button>
          </div>
         </div>
-        <div class="mt-4 bg-purple-100 rounded-full h-4 overflow-hidden">
-         <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+     </div>
+
+     <div id="content-progress" class="tab-content hidden fade-in">
+       <div class="grid lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">🕸️ แผนภาพพัฒนาการ</h2>
+          <div class="radar-container mx-auto"><svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-full"></svg></div>
         </div>
-       </div>
-       
-       <div class="bg-white rounded-3xl shadow-2xl p-8 border-4 border-purple-300 mb-6">
-        <div class="text-center mb-8">
-         <div id="question-display" class="text-6xl font-bold text-purple-600 mb-8">Loading...</div>
+        <div class="space-y-4">
+          <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-green-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">📈 สถิติโดยรวม</h3>
+            <div id="overall-stats" class="space-y-3"></div>
+          </div>
         </div>
-        <div id="answer-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
-       </div>
-       
-       <div class="text-center">
-        <button id="btn-quit-test" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-3 rounded-xl font-bold transition-all shadow-md"> ออกจากข้อสอบ 🚪 </button>
-       </div>
+      </div>
+      <div class="mt-6 bg-white rounded-3xl shadow-xl p-6 border-4 border-pink-200">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">📋 ประวัติการทำข้อสอบทั้งหมด</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full" id="history-table">
+            <thead><tr class="bg-purple-100 border-b-2 border-purple-300"><th class="px-4 py-3 text-left">ระดับ</th><th class="px-4 py-3 text-left">คะแนน</th><th class="px-4 py-3 text-left">วันที่</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
      </div>
-
-     <!-- Progress Tab -->
-     <div id="content-progress" class="tab-content hidden fade-in">
-       <!-- (Content same as original but IDs managed by JS) -->
-       <div class="grid lg:grid-cols-2 gap-6">
-         <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
-           <h2 class="text-xl font-bold text-gray-800 mb-4">🕸️ แผนภาพพัฒนาการ</h2>
-           <div class="radar-container mx-auto">
-             <svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-full"></svg>
-           </div>
-         </div>
-         <div class="space-y-4">
-           <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-green-200">
-             <h3 class="text-lg font-bold text-gray-800 mb-4">📈 สถิติโดยรวม</h3>
-             <div id="overall-stats" class="space-y-3"></div>
-           </div>
-         </div>
-       </div>
-       <div class="mt-6 bg-white rounded-3xl shadow-xl p-6 border-4 border-pink-200">
-         <h3 class="text-xl font-bold text-gray-800 mb-4">📋 ประวัติการทำข้อสอบทั้งหมด</h3>
-         <div class="overflow-x-auto">
-           <table class="w-full" id="history-table">
-             <thead>
-               <tr class="bg-purple-100 border-b-2 border-purple-300">
-                 <th class="px-4 py-3 text-left">ระดับ</th>
-                 <th class="px-4 py-3 text-left">คะแนน</th>
-                 <th class="px-4 py-3 text-left">วันที่</th>
-               </tr>
-             </thead>
-             <tbody></tbody>
-           </table>
-         </div>
-       </div>
-     </div>
-
-     <!-- Grade Tab -->
      <div id="content-grade" class="tab-content hidden fade-in">
        <div class="max-w-4xl mx-auto text-center">
          <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 border-4 border-purple-300">
@@ -217,15 +178,39 @@
            </div>
            <p class="text-xl text-gray-600 mb-2">คะแนนเฉลี่ย: <span class="font-bold text-purple-600" id="grade-avg-score">0</span>%</p>
          </div>
-         <div id="improvement-tips" class="space-y-3 text-left"></div>
        </div>
      </div>
-
     </main>
    </div>
   </div>
 
-  <!-- Result Modal -->
+  <div id="grade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black bg-opacity-50">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full fade-in border-4 border-purple-300 text-center">
+      <div class="text-6xl mb-4">👋</div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">ยินดีต้อนรับ!</h2>
+      <p class="text-gray-600 mb-6">น้องอยู่ชั้นไหนครับ? เลือกให้ครูหน่อยนะ</p>
+      
+      <div class="relative mb-6 text-left">
+        <label class="block text-sm font-medium text-gray-700 mb-2">ระดับชั้น</label>
+        <select id="modal-grade-select" class="w-full p-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white text-lg">
+          <option value="P.1">ประถมศึกษาปีที่ 1</option>
+          <option value="P.2">ประถมศึกษาปีที่ 2</option>
+          <option value="P.3">ประถมศึกษาปีที่ 3</option>
+          <option value="P.4">ประถมศึกษาปีที่ 4</option>
+          <option value="P.5">ประถมศึกษาปีที่ 5</option>
+          <option value="P.6">ประถมศึกษาปีที่ 6</option>
+          <option value="M.1">มัธยมศึกษาปีที่ 1</option>
+          <option value="M.2">มัธยมศึกษาปีที่ 2</option>
+          <option value="M.3">มัธยมศึกษาปีที่ 3</option>
+        </select>
+      </div>
+
+      <button id="btn-save-grade" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg text-lg">
+        ยืนยัน ✅
+      </button>
+    </div>
+  </div>
+
   <div id="result-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full fade-in border-4 border-purple-300 text-center">
     <div id="result-emoji" class="text-8xl mb-4">🎉</div>
@@ -239,7 +224,6 @@
    </div>
   </div>
 
-  <!-- Import Main Script (Module) -->
   <script type="module" src="js/app.js"></script>
  </body>
 </html>
