@@ -8,13 +8,13 @@ const game = new MathGame();
 let timerInterval = null;
 let currentUser = null;
 
-// --- Initialization ---
+// --- เริ่มต้นการทำงาน (Initialization) ---
 document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth();
     setupEventListeners();
 });
 
-// --- Auth Handling ---
+// --- การจัดการการยืนยันตัวตน (Auth Handling) ---
 async function checkAuth() {
     try {
         currentUser = await getCurrentUser();
@@ -45,14 +45,14 @@ function showApp() {
     if (mainApp) mainApp.classList.remove('hidden');
     
     if (userDisplay && currentUser) {
-        // แสดงเฉพาะรหัส ID โดยตัดส่วนท้ายที่เป็นโดเมนออก
+        // แสดงเฉพาะรหัส ID โดยตัด @mathpath.com ออก
         userDisplay.textContent = currentUser.email.split('@')[0];
     }
     switchTab('select');
     loadHistoryData();
 }
 
-// --- Event Listeners (Safe Access) ---
+// --- ตั้งค่า Event Listeners (Safe Access เพื่อป้องกัน Error null) ---
 function setupEventListeners() {
     // ฟอร์มล็อกอิน
     const loginForm = document.getElementById('login-form');
@@ -75,7 +75,7 @@ function setupEventListeners() {
         });
     });
 
-    // ปุ่มเลือกเลเวล
+    // ปุ่มเลือกเลเวลในหน้า Select
     document.querySelectorAll('.level-card').forEach(card => {
         card.addEventListener('click', async () => {
             const btn = card.querySelector('button');
@@ -88,15 +88,15 @@ function setupEventListeners() {
         });
     });
 
-    // ปุ่มยกเลิกการสอบ
+    // ปุ่มออกจากการสอบ
     const btnQuit = document.getElementById('btn-quit-test');
     if (btnQuit) btnQuit.addEventListener('click', quitTest);
 }
 
-// --- Auth Actions ---
+// --- ฟังก์ชันเกี่ยวกับการล็อกอิน/สมัครสมาชิก ---
 async function handleLogin(e) {
     e.preventDefault();
-    const studentIdEl = document.getElementById('student-id'); // ใช้ ID แทน Email ตามที่คุยกัน
+    const studentIdEl = document.getElementById('student-id');
     const passwordEl = document.getElementById('password');
     const errorDiv = document.getElementById('login-error');
 
@@ -105,7 +105,7 @@ async function handleLogin(e) {
     const studentId = studentIdEl.value.trim();
     const password = passwordEl.value;
     
-    // แปลง ID เป็นรูปแบบ Email เพื่อให้ Supabase ยอมรับ
+    // แปลง ID เป็นรูปแบบ Email สำหรับระบบ Supabase Auth
     const fakeEmail = `${studentId}@mathpath.com`;
     
     if (errorDiv) errorDiv.classList.add('hidden');
@@ -131,6 +131,7 @@ async function handleSignup() {
     const password = passwordEl.value;
     
     if(!studentId || !password) return alert('กรุณากรอกรหัส ID และรหัสผ่าน');
+    if(password.length < 6) return alert('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
 
     const fakeEmail = `${studentId}@mathpath.com`;
 
@@ -138,7 +139,7 @@ async function handleSignup() {
     if(error) {
         alert("สมัครไม่สำเร็จ: " + error.message);
     } else {
-        alert("สมัครสมาชิกสำเร็จ! กรุณาลองล็อกอินด้วย ID นี้");
+        alert("สมัครสมาชิกสำเร็จ! ตอนนี้คุณสามารถใช้ ID นี้เข้าสู่ระบบได้เลย");
     }
 }
 
@@ -146,10 +147,10 @@ async function handleLogout() {
     await logout();
     currentUser = null;
     showLogin();
-    window.location.reload(); // รีโหลดเพื่อล้างสถานะ Session เก่า
+    window.location.reload(); // เคลียร์สถานะค้างในหน่วยความจำ
 }
 
-// --- Game Logic ---
+// --- ตรรกะการทำข้อสอบ (Game Logic) ---
 async function startTest(level) {
     await game.start(level);
     switchTab('test');
@@ -238,7 +239,7 @@ async function handleAnswer(selectedIndex, btnElement) {
 
 async function finishTest() {
     clearInterval(timerInterval);
-    const result = game.getScore(); // ดึงคะแนนรวมและคะแนนแยก 6 แกน
+    const result = game.getScore();
     
     const scoreEl = document.getElementById('result-score');
     const percentEl = document.getElementById('result-percent');
@@ -249,6 +250,7 @@ async function finishTest() {
     if (modal) modal.classList.remove('hidden');
 
     if (currentUser) {
+        // บันทึกคะแนนลง Supabase พร้อมข้อมูล 6 แกนทักษะ
         await saveTestResult({
             user_id: currentUser.id,
             test_level: result.level,
@@ -256,7 +258,6 @@ async function finishTest() {
             total_questions: result.total,
             correct_answers: result.correct,
             time_spent: result.timeSpent,
-            // บันทึกคะแนนแยกตาม 6 แกนทักษะ
             numerical: result.numerical || 0,
             algebraic: result.algebraic || 0,
             spatial: result.spatial || 0,
@@ -268,13 +269,14 @@ async function finishTest() {
     }
 }
 
+// --- การจัดการข้อมูลและสถิติ (6 แกนทักษะ) ---
 async function loadHistoryData() {
     if(!currentUser) return;
     
     const { data: history } = await getTestHistory(currentUser.id);
     if (!history) return;
 
-    // คำนวณค่าเฉลี่ยสะสม 6 แกนทักษะ
+    // คำนวณค่าเฉลี่ยสะสม 6 แกนทักษะจากประวัติการทำทั้งหมด
     const skillSums = { numerical: 0, algebraic: 0, spatial: 0, data: 0, logical: 0, applied: 0 };
     const skillCounts = { numerical: 0, algebraic: 0, spatial: 0, data: 0, logical: 0, applied: 0 };
 
@@ -292,10 +294,10 @@ async function loadHistoryData() {
         avgScores[key] = skillCounts[key] > 0 ? Math.round(skillSums[key] / skillCounts[key]) : 0;
     });
 
-    // วาดกราฟใยแมงมุมจากค่าเฉลี่ยสะสม
+    // วาดกราฟใยแมงมุม 6 แกน
     drawSpiderChart(avgScores);
 
-    // แสดงประวัติสั้นๆ ในหน้าแรก
+    // ประวัติล่าสุด (แสดง 3 รายการ)
     const miniContainer = document.getElementById('mini-history');
     if (miniContainer) {
         if (history.length === 0) {
@@ -310,13 +312,13 @@ async function loadHistoryData() {
         }
     }
 
-    // สถิติและเกรดเฉลี่ยรวม
+    // สถิติและเกรดเฉลี่ย
     const overallAvg = history.length > 0 ? Math.round(history.reduce((a, b) => a + b.score, 0) / history.length) : 0;
     const statsEl = document.getElementById('overall-stats');
     if (statsEl) {
         statsEl.innerHTML = `
-            <div class="flex justify-between p-3 bg-green-50 rounded-xl"><span>จำนวนครั้งที่ทำ:</span> <b>${history.length} ครั้ง</b></div>
-            <div class="flex justify-between p-3 bg-blue-50 rounded-xl"><span>คะแนนเฉลี่ยรวม:</span> <b>${overallAvg}%</b></div>
+            <div class="flex justify-between p-3 bg-green-50 rounded-xl"><span>ทำข้อสอบไปแล้ว:</span> <b>${history.length} ครั้ง</b></div>
+            <div class="flex justify-between p-3 bg-blue-50 rounded-xl"><span>คะแนนเฉลี่ยสะสม:</span> <b>${overallAvg}%</b></div>
         `;
     }
 
@@ -325,11 +327,11 @@ async function loadHistoryData() {
     if (gradeEl) gradeEl.textContent = calculateGrade(overallAvg);
     if (gradeAvgEl) gradeAvgEl.textContent = overallAvg;
 
-    // ตารางประวัติเต็มรูปแบบ
+    // ตารางประวัติในหน้า Progress
     const tableBody = document.querySelector('#history-table tbody');
     if (tableBody) {
         tableBody.innerHTML = history.map(h => `
-            <tr class="bg-white border-b hover:bg-purple-50">
+            <tr class="bg-white border-b hover:bg-purple-50 text-center">
                 <td class="px-4 py-3">${h.test_level}</td>
                 <td class="px-4 py-3 font-bold ${h.score >= 60 ? 'text-green-600' : 'text-red-600'}">${Math.round(h.score)}%</td>
                 <td class="px-4 py-3 text-xs text-gray-500">${new Date(h.created_at).toLocaleDateString('th-TH')}</td>
