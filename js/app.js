@@ -23,22 +23,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function checkAuth() {
     currentUser = await getCurrentUser();
     if (currentUser) {
-        // [UPDATED] เช็คว่าเป็นนักเรียนหรือครู?
         await checkRoleAndRedirect();
     } else {
         showLogin();
     }
 }
 
-// [ฟังก์ชันใหม่] ตรวจสอบสิทธิ์และพาไปหน้าทีถูกต้อง
 async function checkRoleAndRedirect() {
     const email = currentUser.email;
-    
-    // 1. ดึง ID จากอีเมล (ตัดส่วนหลัง @ ออก) หรือเช็คจาก email เต็มก็ได้
-    // แต่ในตาราง students เราเก็บ student_id ไว้
-    // ลองเช็คดูว่า User นี้มีข้อมูลในตาราง students หรือไม่?
-    
-    // แปลง email กลับเป็น student_id (สมมติว่าเป็นนักเรียน)
     const possibleStudentId = email.split('@')[0];
 
     // Query ดูในตาราง students
@@ -50,12 +42,10 @@ async function checkRoleAndRedirect() {
 
     // กรณีที่ 1: พบข้อมูลในตาราง students -> เป็นนักเรียน
     if (studentRecord) {
-        // บันทึกชื่อจริงลง Metadata ถ้ายังไม่มี (เผื่อไว้)
         if (!currentUser.user_metadata?.name) {
              await supabase.auth.updateUser({
                 data: { name: studentRecord.full_name, grade: studentRecord.grade }
              });
-             // อัปเดตตัวแปร local
              currentUser.user_metadata = { 
                  ...currentUser.user_metadata, 
                  name: studentRecord.full_name, 
@@ -66,7 +56,6 @@ async function checkRoleAndRedirect() {
     } 
     // กรณีที่ 2: ไม่พบข้อมูล -> สันนิษฐานว่าเป็น "ครู" (Admin)
     else {
-        // พาไปหน้า Admin
         alert("ยินดีต้อนรับคุณครู! กำลังเข้าสู่ระบบจัดการ...");
         window.location.href = 'admin.html';
     }
@@ -83,7 +72,6 @@ function showApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
     
-    // แสดงผลชื่อนักเรียน
     updateUserDisplay();
     switchTab('select');
     loadHistoryData();
@@ -97,10 +85,6 @@ function updateUserDisplay() {
         display.textContent = `น้อง ${name} (${grade})`;
     }
 }
-
-// ... (ส่วนที่เหลือ setupEventListeners, handleLogin ฯลฯ เหมือนเดิม) ...
-// ให้ก๊อปปี้ส่วน EventListeners และ Game Logic เดิมมาใส่ต่อท้ายได้เลยครับ
-// หรือถ้าต้องการไฟล์เต็มบอกได้ครับ แต่หลักๆ คือแก้แค่ checkAuth และเพิ่ม checkRoleAndRedirect ครับ
 
 function setupEventListeners() {
     const loginForm = document.getElementById('login-form');
@@ -144,14 +128,13 @@ async function handleLogin(e) {
     
     errorDiv.classList.add('hidden');
     
-    // auth.js รองรับทั้ง ID และ Email อยู่แล้ว
     const { error } = await login(inputVal, password);
     
     if (error) {
         errorDiv.textContent = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
         errorDiv.classList.remove('hidden');
     } else {
-        checkAuth(); // เรียกเช็คสิทธิ์เพื่อ Redirect
+        checkAuth();
     }
 }
 
@@ -161,9 +144,10 @@ async function handleLogout() {
     showLogin();
 }
 
-// ... (Game Logic: startTest, updateQuestionUI, ฯลฯ เหมือนเดิมเป๊ะ) ...
+// --- Game Logic ---
+
 async function startTest(level) {
-    const userGrade = currentUser?.user_metadata?.grade || 'P.1'; // Default P.1 ถ้าครูเข้ามาเทสเล่น
+    const userGrade = currentUser?.user_metadata?.grade || 'P.1'; 
     await game.start(level, userGrade);
     
     if (!game.questions || game.questions.length === 0) {
@@ -253,6 +237,7 @@ function handleAnswer(index, value, btnElement) {
     }, 1000);
 }
 
+// [UPDATED] แก้ไขฟังก์ชันจบการทดสอบเพื่อบันทึกสถิติ 6 ด้าน
 async function finishTest() {
     clearInterval(timerInterval);
     const result = game.getScore();
@@ -264,14 +249,17 @@ async function finishTest() {
         document.getElementById('result-emoji').textContent = emoji;
         resultModal.classList.remove('hidden');
     }
+    
     if (currentUser) {
+        // ส่ง competency_stats ไปบันทึกด้วย
         await saveTestResult({
             user_id: currentUser.id,
             test_level: result.level,
             score: result.score,
             total_questions: result.total,
             correct_answers: result.correct,
-            time_spent: result.timeSpent
+            time_spent: result.timeSpent,
+            competency_stats: result.competencyStats // [NEW] ข้อมูลใหม่
         });
         loadHistoryData(); 
     }
@@ -288,11 +276,13 @@ window.closeResultModal = () => {
     switchTab('select');
 };
 
+// [UPDATED] แก้ไขการโหลดประวัติเพื่อคำนวณกราฟ 6 ด้าน
 async function loadHistoryData() {
     if(!currentUser) return;
     const { data: history } = await getTestHistory(currentUser.id);
     if (!history) return;
 
+    // 1. แสดงประวัติย่อ (Mini History)
     const miniContainer = document.getElementById('mini-history');
     if (miniContainer) {
         if (history.length === 0) {
@@ -307,11 +297,39 @@ async function loadHistoryData() {
         }
     }
     
-    const levelScores = { easy: [], medium: [], hard: [] };
-    history.forEach(h => { if(levelScores[h.test_level]) levelScores[h.test_level].push(h.score); });
-    const avgScores = { easy: avg(levelScores.easy), medium: avg(levelScores.medium), hard: avg(levelScores.hard) };
-    drawSpiderChart(avgScores);
+    // 2. คำนวณค่าเฉลี่ยสำหรับ Spider Chart (6 ด้าน)
+    // เตรียมตัวแปรเก็บคะแนนรวมของแต่ละด้าน
+    const aggStats = {
+        numerical: [], algebraic: [], visual: [],
+        data: [], logical: [], applied: []
+    };
 
+    history.forEach(h => {
+        // ดึง competency_stats จาก JSON (ถ้าเป็น null ให้ใช้ object ว่าง)
+        const stats = h.competency_stats || {}; 
+        
+        // วนลูปเก็บคะแนนลง array
+        Object.keys(aggStats).forEach(key => {
+            if (stats[key] !== undefined && stats[key] !== null) {
+                aggStats[key].push(stats[key]);
+            }
+        });
+    });
+
+    // หาค่าเฉลี่ยของแต่ละด้าน
+    const spiderData = {
+        numerical: avg(aggStats.numerical),
+        algebraic: avg(aggStats.algebraic),
+        visual: avg(aggStats.visual),
+        data: avg(aggStats.data),
+        logical: avg(aggStats.logical),
+        applied: avg(aggStats.applied)
+    };
+
+    // วาดกราฟด้วยข้อมูลใหม่
+    drawSpiderChart(spiderData);
+
+    // 3. แสดงสถิติโดยรวม (Overall Stats)
     const overallStats = document.getElementById('overall-stats');
     if(overallStats) {
         const totalTests = history.length;
@@ -327,6 +345,7 @@ async function loadHistoryData() {
         if(gradeAvg) gradeAvg.textContent = overallAvg;
     }
 
+    // 4. แสดงตารางประวัติ (History Table)
     const tableBody = document.querySelector('#history-table tbody');
     if(tableBody) {
         tableBody.innerHTML = history.map(h => `
@@ -340,7 +359,7 @@ async function loadHistoryData() {
 }
 
 function avg(arr) {
-    if (arr.length === 0) return 0;
+    if (!arr || arr.length === 0) return 0;
     return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
 }
 
