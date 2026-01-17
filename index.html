@@ -3,227 +3,430 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เข้าสู่ระบบ (สำหรับนักเรียน)</title>
+  <title>The Grand Archive - คลังปัญญาคณิตศาสตร์</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="styles.css">
  </head>
- <body class="h-full w-full bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
+ <body class="h-full w-full bg-[#f4f1ea] text-slate-800">
+  
   <div id="app" class="h-full w-full overflow-auto">
    
    <div id="login-screen" class="min-h-full flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full fade-in">
-     <div class="text-center mb-6">
-      <div class="inline-block float-animation">
-       <div class="w-20 h-20 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-4xl mb-4 mx-auto shadow-lg">
-        🎓
-       </div>
-      </div>
-      <h1 class="text-2xl font-bold text-gray-800 mb-2">เข้าสู่ระบบ</h1>
-      <p class="text-purple-600 font-medium">กรอกรหัสนักเรียนที่ครูให้</p>
+    <div class="bg-white max-w-md w-full fade-in relative overflow-hidden border-l-4 border-slate-800">
+     <div class="absolute top-0 right-0 p-2 opacity-10">
+         <svg class="w-32 h-32 text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
      </div>
-     <form id="login-form" class="space-y-4">
-      <div>
-       <label for="student-id" class="block text-sm font-medium text-gray-700 mb-1">รหัสนักเรียน</label>
-       <div class="relative">
-        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">🆔</span> 
-        <input type="text" id="student-id" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all" placeholder="เช่น 1001" required>
-       </div>
-      </div>
-      <div>
-       <label for="password" class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
-       <div class="relative">
-        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl">🔒</span> 
-        <input type="password" id="password" class="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all" placeholder="กรอกรหัสผ่าน" required>
-       </div>
-      </div>
-      <div id="login-error" class="hidden bg-red-50 border-2 border-red-200 rounded-xl p-3 text-red-600 text-sm text-center"></div>
-      
-      <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg text-lg"> 
-       เข้าสู่ระบบ 🚀 
-      </button>
-     </form>
+
+     <div class="p-8 relative z-10">
+         <div class="text-center mb-8">
+          <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-800 border-4 border-double border-yellow-600 flex items-center justify-center text-4xl text-yellow-50 shadow-lg">
+           🏛️
+          </div>
+          <h1 class="text-3xl font-serif font-bold text-slate-900 mb-1">Grand Archive</h1>
+          <p class="text-slate-500 font-serif italic text-sm">"ระบบยืนยันตัวตนสมาชิกห้องสมุด"</p>
+         </div>
+         
+         <form id="login-form" class="space-y-6">
+          <div>
+           <label for="student-id" class="block text-sm font-bold text-slate-700 mb-1 uppercase tracking-wider">รหัสสมาชิก (Student ID)</label>
+           <div class="relative">
+            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl text-slate-400">🆔</span> 
+            <input type="text" id="student-id" class="w-full pl-12 pr-4 py-3 border border-slate-300 rounded focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all bg-slate-50" placeholder="ระบุรหัสสมาชิก..." required>
+           </div>
+          </div>
+          <div>
+           <label for="password" class="block text-sm font-bold text-slate-700 mb-1 uppercase tracking-wider">รหัสผ่าน (Access Key)</label>
+           <div class="relative">
+            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-xl text-slate-400">🗝️</span> 
+            <input type="password" id="password" class="w-full pl-12 pr-4 py-3 border border-slate-300 rounded focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all bg-slate-50" placeholder="ระบุรหัสผ่าน..." required>
+           </div>
+          </div>
+          <div id="login-error" class="hidden bg-red-50 border-l-4 border-red-800 p-3 text-red-800 text-sm italic"></div>
+          
+          <button type="submit" id="btn-login" class="w-full bg-slate-800 text-yellow-50 py-3 px-6 rounded font-serif font-bold hover:bg-slate-700 transition-all shadow-md tracking-widest border border-slate-900"> 
+           เข้าสู่ระบบห้องสมุด
+          </button>
+         </form>
+     </div>
+     <div class="bg-slate-100 p-3 text-center border-t border-slate-200">
+         <p class="text-xs text-slate-400 font-serif">Secure Archive Access Protocol v2.0</p>
+     </div>
     </div>
    </div>
 
-   <div id="main-app" class="hidden h-full w-full">
-    <header class="bg-white shadow-lg border-b-4 border-purple-300">
-     <div class="max-w-7xl mx-auto px-4 py-4">
+   <div id="main-app" class="hidden h-full w-full flex flex-col">
+    
+    <header class="bg-white shadow-md border-b border-yellow-600 relative z-20">
+     <div class="max-w-7xl mx-auto px-4 py-3">
       <div class="flex items-center justify-between">
-       <div class="flex items-center gap-3">
-        <div class="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">📚</div>
+       <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-slate-800 rounded flex items-center justify-center text-2xl shadow-md border border-yellow-600 text-yellow-50">📚</div>
         <div>
-         <h1 class="text-xl font-bold text-gray-800">ห้องเรียนคณิตศาสตร์</h1>
-         <p class="text-sm text-purple-600">ฝึกฝนทักษะการคำนวณ</p>
+         <h1 class="text-xl font-serif font-bold text-slate-900">Grand Archive</h1>
+         <p class="text-xs text-slate-500 uppercase tracking-widest">Mathematics Department</p>
         </div>
        </div>
        <div class="flex items-center gap-4">
         <div class="text-right hidden md:block">
-         <p class="text-sm text-gray-600">สวัสดี 👋</p>
-         <p id="current-user-display" class="font-bold text-purple-600">User</p>
+         <p class="text-xs text-slate-400 uppercase">Logged in as</p>
+         <p id="current-user-display" class="font-bold font-serif text-slate-800">Scholar</p>
         </div>
-        <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-md"> ออกจากระบบ </button>
+        <button id="btn-logout" class="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded text-sm font-medium transition-all shadow-sm border border-red-900 font-serif"> Sign Out </button>
        </div>
       </div>
      </div>
     </header>
 
-    <nav class="bg-white border-b-2 border-purple-100 sticky top-0 z-10 shadow-sm">
+    <nav class="bg-[#f4f1ea] border-b border-slate-200 sticky top-0 z-10 shadow-sm">
       <div class="max-w-7xl mx-auto px-4">
-       <div class="flex gap-2 overflow-x-auto">
-        <button data-tab="select" class="nav-tab px-6 py-3 font-semibold text-purple-600 border-b-4 border-purple-500 bg-purple-50 whitespace-nowrap"> 🎯 เลือกแบบฝึกหัด </button> 
-        <button data-tab="progress" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 📊 พัฒนาการ </button> 
-        <button data-tab="grade" class="nav-tab px-6 py-3 font-semibold text-gray-600 border-b-4 border-transparent hover:bg-purple-50 whitespace-nowrap"> 🏆 เกรด </button>
+       <div class="flex gap-1 overflow-x-auto pt-2">
+        <button data-tab="select" class="nav-tab px-6 py-3 font-bold text-slate-800 border-b-4 border-yellow-600 bg-yellow-50/50 whitespace-nowrap transition-colors"> 
+            🏛️ คลังข้อสอบ (Archive) 
+        </button> 
+        <button data-tab="progress" class="nav-tab px-6 py-3 font-bold text-slate-500 border-b-4 border-transparent hover:text-slate-700 whitespace-nowrap transition-colors"> 
+            📊 รายงานผล (Report) 
+        </button> 
+        <button data-tab="grade" class="nav-tab px-6 py-3 font-bold text-slate-500 border-b-4 border-transparent hover:text-slate-700 whitespace-nowrap transition-colors"> 
+            🏆 เกียรติบัตร (Status) 
+        </button>
        </div>
       </div>
      </nav>
-    <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow">
+     
      <div id="content-select" class="tab-content fade-in">
-      <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">เลือกระดับความยาก 🎮</h2>
-        <p class="text-gray-600">เลือกแบบฝึกหัดที่เหมาะกับความสามารถของคุณ</p>
-       </div>
-       <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-green-300 hover:shadow-2xl transition-all cursor-pointer" data-level="easy">
-         <div class="text-center">
-          <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">😊</div>
-          <h3 class="text-2xl font-bold text-green-600 mb-2">ง่าย</h3>
-          <p class="text-gray-600 mb-4">เริ่มต้นฝึกฝนพื้นฐาน</p>
-          <button class="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
-         </div>
+        <div class="text-center mb-10 pt-4 relative">
+            <div class="inline-block border-b-2 border-yellow-600 pb-2 px-8">
+                <h2 class="text-4xl font-serif text-slate-900 mb-1">Grand Archive of Mathematics</h2>
+                <p class="text-slate-600 font-serif italic">"คลังปัญญาเพื่อความเป็นเลิศทางคณิตศาสตร์"</p>
+            </div>
         </div>
-        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-yellow-300 hover:shadow-2xl transition-all cursor-pointer" data-level="medium">
-         <div class="text-center">
-          <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤔</div>
-          <h3 class="text-2xl font-bold text-yellow-600 mb-2">ปานกลาง</h3>
-          <p class="text-gray-600 mb-4">ฝึกฝนให้เชี่ยวชาญขึ้น</p>
-          <button class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
-         </div>
+    
+        <div class="max-w-4xl mx-auto mb-12">
+            <div onclick="startAdaptiveTest()" class="group cursor-pointer relative bg-slate-800 rounded shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-slate-700">
+                <div class="absolute top-0 right-0 p-4 opacity-10"><svg class="w-32 h-32 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+                
+                <div class="flex flex-col md:flex-row items-center p-8 relative z-10">
+                    <div class="flex-shrink-0 mr-0 md:mr-8 mb-4 md:mb-0">
+                        <div class="w-20 h-20 rounded-full bg-slate-700 border-2 border-yellow-600 flex items-center justify-center text-4xl shadow-lg text-yellow-50">
+                            📜
+                        </div>
+                    </div>
+                    <div class="flex-grow text-center md:text-left">
+                        <h3 class="text-2xl font-serif font-bold text-yellow-50 mb-2 group-hover:text-yellow-400 transition-colors">ภารกิจลับอัจฉริยะ (Smart Mission)</h3>
+                        <p class="text-slate-300 font-light text-sm leading-relaxed">ระบบ AI จะคัดสรรโจทย์ที่เหมาะสมกับระดับทักษะของคุณโดยอัตโนมัติ เพื่อปิดจุดอ่อนและเสริมจุดแข็งอย่างมีประสิทธิภาพสูงสุด</p>
+                    </div>
+                    <div class="mt-6 md:mt-0 md:ml-6">
+                        <button class="bg-yellow-700 hover:bg-yellow-600 text-white px-6 py-3 rounded shadow-md border border-yellow-500 font-serif tracking-wider font-bold">
+                            เริ่มการทดสอบ
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="level-card bg-white rounded-3xl shadow-xl p-6 border-4 border-red-300 hover:shadow-2xl transition-all cursor-pointer" data-level="hard">
-         <div class="text-center">
-          <div class="w-20 h-20 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">🤓</div>
-          <h3 class="text-2xl font-bold text-red-600 mb-2">ยาก</h3>
-          <p class="text-gray-600 mb-4">ท้าทายความสามารถสูงสุด</p>
-          <button class="w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-xl font-bold shadow-md">เริ่มทำข้อสอบ 🚀</button>
-         </div>
+    
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-300 pb-2">
+                <span class="text-2xl">🏛️</span>
+                <h3 class="text-xl font-serif font-bold text-slate-800">หมวดหมู่ทักษะ (Skill Collections)</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <div onclick="startSpecificTest('numerical')" class="bg-white p-6 border-l-4 border-slate-800 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: NUM-001</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">จำนวนและการคำนวณ</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Numerical Fluency</p>
+                        </div>
+                        <div class="text-2xl text-slate-700 opacity-80 group-hover:scale-110 transition">🧮</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">Lv. <span id="lv-numerical">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-slate-800 h-full w-[0%]" id="bar-numerical"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div onclick="startSpecificTest('algebraic')" class="bg-white p-6 border-l-4 border-yellow-700 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: ALG-002</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">พีชคณิตและแบบรูป</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Algebraic Thinking</p>
+                        </div>
+                        <div class="text-2xl text-yellow-700 opacity-80 group-hover:scale-110 transition">⚖️</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-yellow-800 bg-yellow-50 px-2 py-1 rounded">Lv. <span id="lv-algebraic">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-yellow-700 h-full w-[0%]" id="bar-algebraic"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div onclick="startSpecificTest('visual')" class="bg-white p-6 border-l-4 border-emerald-800 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: VIS-003</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">มิติสัมพันธ์</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Visual-Spatial</p>
+                        </div>
+                        <div class="text-2xl text-emerald-800 opacity-80 group-hover:scale-110 transition">📐</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded">Lv. <span id="lv-visual">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-800 h-full w-[0%]" id="bar-visual"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div onclick="startSpecificTest('data')" class="bg-white p-6 border-l-4 border-rose-800 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: DAT-004</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">ข้อมูลและสถิติ</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Data Analysis</p>
+                        </div>
+                        <div class="text-2xl text-rose-800 opacity-80 group-hover:scale-110 transition">📊</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-rose-800 bg-rose-50 px-2 py-1 rounded">Lv. <span id="lv-data">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-rose-800 h-full w-[0%]" id="bar-data"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div onclick="startSpecificTest('logical')" class="bg-white p-6 border-l-4 border-indigo-800 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: LOG-005</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">ตรรกะและเหตุผล</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Logical Reasoning</p>
+                        </div>
+                        <div class="text-2xl text-indigo-800 opacity-80 group-hover:scale-110 transition">🧩</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-indigo-800 bg-indigo-50 px-2 py-1 rounded">Lv. <span id="lv-logical">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-indigo-800 h-full w-[0%]" id="bar-logical"></div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div onclick="startSpecificTest('applied')" class="bg-white p-6 border-l-4 border-orange-800 shadow-sm hover:shadow-md cursor-pointer transition-all group relative">
+                    <div class="absolute top-2 right-2 text-xs font-serif text-gray-400">REF: APP-006</div>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-serif font-bold text-slate-800 group-hover:text-yellow-700 transition">การประยุกต์ใช้</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Applied Problem Solving</p>
+                        </div>
+                        <div class="text-2xl text-orange-800 opacity-80 group-hover:scale-110 transition">🛠️</div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-orange-800 bg-orange-50 px-2 py-1 rounded">Lv. <span id="lv-applied">1</span></span>
+                            <span class="text-xs text-gray-400">Mastery</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-orange-800 h-full w-[0%]" id="bar-applied"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="mt-10 pt-6 border-t border-slate-300">
+                <h5 class="text-sm font-serif font-bold text-slate-500 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-slate-400 rounded-full"></span> Recent Activity Log
+                </h5>
+                <div id="mini-history" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <p class="text-slate-400 text-sm italic col-span-3">Loading archives...</p>
+                </div>
+            </div>
         </div>
-       </div>
-       <div class="mt-8 bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
-        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">📜 ประวัติล่าสุด</h3>
-        <div id="mini-history" class="space-y-2"><p class="text-gray-500 text-center py-4">กำลังโหลดข้อมูล...</p></div>
-       </div>
      </div>
 
      <div id="content-test" class="tab-content hidden fade-in">
         <div class="max-w-3xl mx-auto">
-         <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 border-4 border-purple-300">
+         <div class="bg-white rounded shadow-md p-6 mb-6 border-l-4 border-yellow-600">
           <div class="flex justify-between items-center">
            <div>
-            <h3 id="test-level-title" class="text-2xl font-bold text-purple-600 mb-1">แบบฝึกหัด</h3>
-            <p class="text-gray-600">ข้อที่ <span id="current-question-num">1</span> จาก <span id="total-questions">10</span></p>
+            <h3 id="test-level-title" class="text-2xl font-serif font-bold text-slate-900 mb-1">Assessment In Progress</h3>
+            <p class="text-slate-600 font-serif">Question <span id="current-question-num" class="font-bold">1</span> of <span id="total-questions">10</span></p>
            </div>
            <div class="text-right">
-            <p class="text-sm text-gray-600">⏱️ เวลา</p>
-            <p id="timer" class="text-3xl font-bold text-purple-600">0:00</p>
+            <p class="text-xs text-slate-400 uppercase tracking-widest">Time Elapsed</p>
+            <p id="timer" class="text-3xl font-mono font-bold text-slate-800">0:00</p>
            </div>
           </div>
-          <div class="mt-4 bg-purple-100 rounded-full h-4 overflow-hidden">
-           <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+          <div class="mt-4 bg-slate-100 rounded-full h-2 overflow-hidden">
+           <div id="progress-bar" class="bg-yellow-600 h-full transition-all duration-300" style="width: 0%"></div>
           </div>
          </div>
-         <div class="bg-white rounded-3xl shadow-2xl p-8 border-4 border-purple-300 mb-6">
-          <div class="text-center mb-8">
-           <div id="question-display" class="text-6xl font-bold text-purple-600 mb-8">Loading...</div>
+
+         <div class="bg-white rounded shadow-lg p-8 border border-slate-200 mb-6 relative">
+          <div class="absolute top-0 right-0 p-2 opacity-5"><svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></div>
+          
+          <div class="text-center mb-10 relative z-10">
+           <div id="question-display" class="text-4xl font-serif font-bold text-slate-800 mb-8 leading-relaxed">Loading Query...</div>
           </div>
-          <div id="answer-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
+
+          <div id="answer-options" class="grid grid-cols-2 gap-4 max-w-xl mx-auto">
+              </div>
          </div>
+
          <div class="text-center">
-          <button id="btn-quit-test" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-3 rounded-xl font-bold transition-all shadow-md"> ออกจากข้อสอบ 🚪 </button>
+          <button id="btn-quit-test" class="text-slate-500 hover:text-red-600 px-6 py-2 font-serif font-bold transition-all text-sm uppercase tracking-widest border-b border-transparent hover:border-red-600"> 
+           Abort Mission
+          </button>
          </div>
         </div>
      </div>
 
      <div id="content-progress" class="tab-content hidden fade-in">
-       <div class="grid lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-purple-200">
-          <h2 class="text-xl font-bold text-gray-800 mb-4">🕸️ แผนภาพพัฒนาการ</h2>
+       <div class="grid lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded shadow-md p-6 border-t-4 border-slate-800">
+          <h2 class="text-xl font-serif font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <span class="text-yellow-600">🕸️</span> Competency Radar
+          </h2>
           <div class="radar-container mx-auto"><svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-full"></svg></div>
         </div>
-        <div class="space-y-4">
-          <div class="bg-white rounded-3xl shadow-xl p-6 border-4 border-green-200">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">📈 สถิติโดยรวม</h3>
-            <div id="overall-stats" class="space-y-3"></div>
+        
+        <div class="space-y-6">
+          <div class="bg-white rounded shadow-md p-6 border-t-4 border-yellow-600">
+            <h3 class="text-lg font-serif font-bold text-slate-800 mb-4">Overall Performance</h3>
+            <div id="overall-stats" class="space-y-3 font-serif">
+                </div>
+          </div>
+          
+          <div class="bg-white rounded shadow-md p-6 border-t-4 border-slate-400">
+            <h3 class="text-lg font-serif font-bold text-slate-800 mb-4">Activity Log</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left" id="history-table">
+                <thead>
+                    <tr class="bg-slate-100 text-slate-600 font-serif uppercase tracking-wider text-xs">
+                        <th class="px-4 py-3 rounded-l">Mission</th>
+                        <th class="px-4 py-3">Score</th>
+                        <th class="px-4 py-3 rounded-r">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-      <div class="mt-6 bg-white rounded-3xl shadow-xl p-6 border-4 border-pink-200">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">📋 ประวัติการทำข้อสอบทั้งหมด</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full" id="history-table">
-            <thead><tr class="bg-purple-100 border-b-2 border-purple-300"><th class="px-4 py-3 text-left">ระดับ</th><th class="px-4 py-3 text-left">คะแนน</th><th class="px-4 py-3 text-left">วันที่</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
      </div>
+
      <div id="content-grade" class="tab-content hidden fade-in">
        <div class="max-w-4xl mx-auto text-center">
-         <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 border-4 border-purple-300">
-           <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 เกรดของคุณ</h2>
-           <div class="inline-block p-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl shadow-xl mb-6">
-             <p class="text-white text-lg mb-2">เกรดปัจจุบัน</p>
-             <p class="text-8xl font-bold text-white" id="current-grade">-</p>
+         <div class="bg-white rounded shadow-xl p-10 mb-6 border-double border-4 border-yellow-600 relative overflow-hidden">
+           <div class="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]"></div>
+           
+           <div class="relative z-10">
+               <h2 class="text-3xl font-serif font-bold text-slate-900 mb-8 uppercase tracking-widest border-b border-slate-200 inline-block pb-4">Academic Status Report</h2>
+               
+               <div class="inline-block p-10 bg-slate-800 text-yellow-50 rounded-lg shadow-2xl mb-8 border border-yellow-600">
+                 <p class="font-serif italic text-yellow-200 mb-2">Current Grade Standing</p>
+                 <p class="text-9xl font-serif font-bold" id="current-grade">-</p>
+               </div>
+               
+               <p class="text-xl text-slate-600 font-serif">Average Proficiency: <span class="font-bold text-slate-900 text-2xl" id="grade-avg-score">0</span>%</p>
            </div>
-           <p class="text-xl text-gray-600 mb-2">คะแนนเฉลี่ย: <span class="font-bold text-purple-600" id="grade-avg-score">0</span>%</p>
          </div>
        </div>
      </div>
+
     </main>
    </div>
   </div>
 
-  <div id="grade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black bg-opacity-50">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full fade-in border-4 border-purple-300 text-center">
-      <div class="text-6xl mb-4">👋</div>
-      <h2 class="text-2xl font-bold text-gray-800 mb-2">ยินดีต้อนรับ!</h2>
-      <p class="text-gray-600 mb-6">น้องอยู่ชั้นไหนครับ? เลือกให้ครูหน่อยนะ</p>
-      
-      <div class="relative mb-6 text-left">
-        <label class="block text-sm font-medium text-gray-700 mb-2">ระดับชั้น</label>
-        <select id="modal-grade-select" class="w-full p-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white text-lg">
-          <option value="P.1">ประถมศึกษาปีที่ 1</option>
-          <option value="P.2">ประถมศึกษาปีที่ 2</option>
-          <option value="P.3">ประถมศึกษาปีที่ 3</option>
-          <option value="P.4">ประถมศึกษาปีที่ 4</option>
-          <option value="P.5">ประถมศึกษาปีที่ 5</option>
-          <option value="P.6">ประถมศึกษาปีที่ 6</option>
-          <option value="M.1">มัธยมศึกษาปีที่ 1</option>
-          <option value="M.2">มัธยมศึกษาปีที่ 2</option>
-          <option value="M.3">มัธยมศึกษาปีที่ 3</option>
-        </select>
+  <div id="grade-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-slate-900/80 backdrop-blur-sm">
+    <div class="bg-white rounded shadow-2xl p-8 max-w-md w-full fade-in border-t-4 border-yellow-600">
+      <div class="text-center">
+          <div class="text-6xl mb-4">👋</div>
+          <h2 class="text-2xl font-serif font-bold text-slate-900 mb-2">Welcome Scholar!</h2>
+          <p class="text-slate-600 mb-6 font-serif">Please identify your academic level.</p>
+          
+          <div class="relative mb-6 text-left">
+            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Academic Grade</label>
+            <select id="modal-grade-select" class="w-full p-3 border border-slate-300 rounded focus:ring-1 focus:ring-slate-800 bg-slate-50 font-serif">
+              <option value="P.1">Primary 1</option>
+              <option value="P.2">Primary 2</option>
+              <option value="P.3">Primary 3</option>
+              <option value="P.4">Primary 4</option>
+              <option value="P.5">Primary 5</option>
+              <option value="P.6">Primary 6</option>
+              <option value="M.1">Secondary 1</option>
+              <option value="M.2">Secondary 2</option>
+              <option value="M.3">Secondary 3</option>
+            </select>
+          </div>
+    
+          <button id="btn-save-grade" class="w-full bg-slate-800 text-white py-3 rounded font-serif font-bold hover:bg-slate-700 transition-all shadow-lg border border-slate-900">
+            Confirm Identity
+          </button>
       </div>
-
-      <button id="btn-save-grade" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg text-lg">
-        ยืนยัน ✅
-      </button>
     </div>
   </div>
 
-  <div id="result-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-   <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full fade-in border-4 border-purple-300 text-center">
-    <div id="result-emoji" class="text-8xl mb-4">🎉</div>
-    <h2 class="text-3xl font-bold text-gray-800 mb-2">เสร็จสิ้น!</h2>
-    <div class="bg-purple-100 rounded-2xl p-6 mb-6 border-2 border-purple-300">
-     <p class="text-gray-700 mb-2">คะแนนที่ได้</p>
-     <p class="text-6xl font-bold text-purple-600" id="result-score">0/10</p>
-     <p class="text-2xl font-bold text-purple-600 mt-2" id="result-percent">0%</p>
+  <div id="result-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-slate-900/90 backdrop-blur-sm">
+   <div class="bg-white rounded shadow-2xl p-8 max-w-lg w-full fade-in border border-slate-200 relative">
+    <div class="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-slate-800 rounded-tl"></div>
+    <div class="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-yellow-600 rounded-br"></div>
+
+    <div class="text-center relative z-10">
+        <div id="result-emoji" class="text-8xl mb-4 drop-shadow-md">🎉</div>
+        <h2 class="text-3xl font-serif font-bold text-slate-900 mb-2">Assessment Complete</h2>
+        <div class="bg-slate-50 rounded p-6 mb-8 border border-slate-200 shadow-inner">
+            <p class="text-slate-500 font-serif italic mb-2">Final Score</p>
+            <p class="text-6xl font-serif font-bold text-slate-800" id="result-score">0/10</p>
+            <p class="text-2xl font-bold text-yellow-600 mt-2" id="result-percent">0%</p>
+        </div>
+        <button onclick="window.closeResultModal()" class="w-full bg-slate-800 text-yellow-50 py-3 rounded font-serif font-bold hover:bg-slate-700 transition-all shadow-md"> 
+            Return to Archive 
+        </button>
     </div>
-    <button onclick="window.closeResultModal()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"> กลับสู่หน้าหลัก 🏠 </button>
    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>
+  
+  <script>
+    // รอให้ app.js โหลดเสร็จและ assign functions เข้า window
+    // เนื่องจากเราใช้ type="module" ฟังก์ชันจะไม่เป็น global โดยอัตโนมัติ
+    // ดังนั้นต้องมีการเชื่อมต่อใน app.js หรือใช้ script นี้ช่วยถ้า app.js รองรับ
+    // หมายเหตุ: เพื่อให้โค้ดทำงานสมบูรณ์ คุณควรเพิ่ม window.startAdaptiveTest = ... ใน app.js ด้วย
+    // หรือเปลี่ยน onclick="..." เป็น id="..." แล้วสั่ง addEventListener ใน app.js
+    
+    // แต่เพื่อความสะดวกในไฟล์ index นี้ ผมจะทิ้ง comment นี้ไว้
+    // หากกดปุ่มแล้วไม่ทำงาน ให้เพิ่มโค้ดนี้ท้ายไฟล์ js/app.js :
+    /*
+      window.startAdaptiveTest = startAdaptiveTest;
+      window.startSpecificTest = startSpecificTest;
+    */
+  </script>
  </body>
 </html>
