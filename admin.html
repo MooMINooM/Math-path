@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Grand Archive Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
+        .tab-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-50 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-yellow-500 text-slate-900 rounded flex items-center justify-center font-bold shadow">GA</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Admin Console</h1>
+                    <p class="text-[10px] text-slate-400 tracking-wider">SYSTEM CONTROL</p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="text-xs bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded font-bold transition">LOGOUT</button>
+        </div>
+    </nav>
+
+    <div id="main-content" class="max-w-7xl mx-auto px-4 py-6 w-full flex-1 flex flex-col overflow-hidden">
+        
+        <div class="flex gap-2 mb-4 border-b border-slate-300 pb-1 flex-shrink-0">
+            <button onclick="switchTab('manage')" id="tab-manage" class="tab-btn active px-6 py-2 rounded-t-lg font-bold border border-b-0 border-transparent text-slate-500 hover:text-slate-800 transition">
+                📝 จัดการข้อสอบ
+            </button>
+            <button onclick="switchTab('students')" id="tab-students" class="tab-btn px-6 py-2 rounded-t-lg font-bold border border-b-0 border-transparent text-slate-500 hover:text-slate-800 transition">
+                👨‍🎓 ทะเบียนนักเรียน
+            </button>
+        </div>
+
+        <div id="view-manage" class="fade-in flex-1 flex flex-col overflow-hidden">
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-4 flex flex-wrap gap-4 items-end flex-shrink-0">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ระดับชั้น</label>
+                    <select id="filter-grade" class="border p-2 rounded w-32 bg-slate-50 text-sm">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="P.1">ป.1</option><option value="P.2">ป.2</option><option value="P.3">ป.3</option>
+                        <option value="P.4">ป.4</option><option value="P.5">ป.5</option><option value="P.6">ป.6</option>
+                        <option value="M.1" selected>ม.1</option><option value="M.2">ม.2</option><option value="M.3">ม.3</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">เทอม</label>
+                    <select id="filter-semester" class="border p-2 rounded w-24 bg-slate-50 text-sm">
+                        <option value="all">ทั้งหมด</option><option value="1">1</option><option value="2">2</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ค้นหาบทเรียน</label>
+                    <input type="text" id="filter-chapter" placeholder="พิมพ์ชื่อบท..." class="border p-2 rounded w-full bg-slate-50 text-sm">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="fetchQuestions()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow-sm transition text-sm">🔍 ค้นหา</button>
+                    <button onclick="openAddModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold shadow-sm transition text-sm">+ เพิ่มข้อสอบ</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow border border-slate-200 flex-1 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto custom-scroll flex-1">
+                    <table class="w-full text-left border-collapse relative">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="p-4 border-b">ID</th>
+                                <th class="p-4 border-b w-1/3">โจทย์</th>
+                                <th class="p-4 border-b">บทเรียน</th>
+                                <th class="p-4 border-b">ทักษะ</th>
+                                <th class="p-4 border-b">Level</th>
+                                <th class="p-4 border-b text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="questions-table-body" class="text-sm divide-y divide-slate-100">
+                            <tr><td colspan="6" class="p-8 text-center text-slate-400">กดปุ่ม "ค้นหา" เพื่อโหลดข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-students" class="hidden fade-in flex-1 flex flex-col overflow-hidden">
+            
+            <div id="setup-warning" class="bg-orange-50 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 text-sm hidden">
+                <p class="font-bold">⚠️ ยังไม่ใส่ Service Role Key</p>
+                <p>กรุณาใส่ Key ในโค้ด (บรรทัด ~360) เพื่อให้ระบบ Sync ทำงานสมบูรณ์</p>
+            </div>
+
+            <div class="grid grid-cols-12 gap-6 h-full">
+                
+                <div class="col-span-4 lg:col-span-3">
+                    <div class="bg-white p-5 rounded-lg shadow border border-slate-200 h-fit sticky top-0">
+                        <h3 class="font-bold text-lg mb-4 text-slate-800 border-b pb-2 flex items-center gap-2">
+                            <span>👤</span> เพิ่มนักเรียนใหม่
+                        </h3>
+                        <form id="add-student-form" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">รหัสนักเรียน (Login ID)</label>
+                                <input type="text" name="student_id" class="w-full border p-2 rounded bg-slate-50 font-mono font-bold" placeholder="เช่น 1004" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อ-นามสกุล</label>
+                                <input type="text" name="full_name" class="w-full border p-2 rounded bg-slate-50" placeholder="ด.ช. รักเรียน..." required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ระดับชั้น</label>
+                                <select name="grade" class="w-full border p-2 rounded bg-slate-50">
+                                    <option value="P.1">ป.1</option><option value="P.2">ป.2</option><option value="P.3">ป.3</option>
+                                    <option value="P.4">ป.4</option><option value="P.5">ป.5</option><option value="P.6">ป.6</option>
+                                    <option value="M.1">ม.1</option><option value="M.2">ม.2</option><option value="M.3">ม.3</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">รหัสผ่านเริ่มต้น</label>
+                                <input type="text" name="password" class="w-full border p-2 rounded bg-slate-50 font-mono" value="123456" required>
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded font-bold hover:bg-slate-700 shadow transition">บันทึก & สร้าง Login</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-span-8 lg:col-span-9 flex flex-col h-full overflow-hidden">
+                    <div class="bg-white rounded-lg shadow border border-slate-200 flex-1 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-shrink-0">
+                            <div class="flex items-center gap-4">
+                                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                    <span>📋</span> รายชื่อ (<span id="student-count">0</span>)
+                                </h3>
+                                <button onclick="syncAuthUsers()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow transition flex items-center gap-1">
+                                    🔄 Sync & Fix Metadata
+                                </button>
+                            </div>
+                            <button onclick="promoteAllStudents()" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-4 py-2 rounded font-bold shadow transition flex items-center gap-2">
+                                <span>🚀</span> เลื่อนชั้นทั้งระบบ
+                            </button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-auto custom-scroll">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-100 text-slate-500 text-xs font-bold uppercase sticky top-0 shadow-sm z-10">
+                                    <tr>
+                                        <th class="p-3 pl-4">รหัส (ID)</th>
+                                        <th class="p-3">ชื่อ-นามสกุล</th>
+                                        <th class="p-3">ชั้น</th>
+                                        <th class="p-3">รหัสผ่าน</th>
+                                        <th class="p-3 text-right pr-4">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table-body" class="text-sm divide-y divide-slate-100">
+                                    <tr><td colspan="5" class="p-6 text-center text-slate-400">กำลังโหลดรายชื่อ...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="question-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scroll">
+            <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="font-bold text-lg">📝 จัดการข้อสอบ</h3>
+                <button onclick="closeModal('question-modal')" class="text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            </div>
+            <div class="p-6">
+                <form id="question-form" class="space-y-4">
+                    <input type="hidden" name="id"> 
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">ระดับชั้น</label>
+                            <select name="grade" class="w-full border p-2 rounded" onchange="updateChapterDropdown()"><option value="P.1">ป.1</option><option value="P.2">ป.2</option><option value="P.3">ป.3</option><option value="P.4">ป.4</option><option value="P.5">ป.5</option><option value="P.6">ป.6</option><option value="M.1">ม.1</option><option value="M.2">ม.2</option><option value="M.3">ม.3</option></select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">เทอม</label>
+                            <select name="semester" class="w-full border p-2 rounded" onchange="updateChapterDropdown()"><option value="1">1</option><option value="2">2</option></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">บทเรียน</label>
+                            <select name="chapter" id="modal-chapter-select" class="w-full border p-2 rounded bg-white"><option value="" disabled selected>-- เลือกบท --</option></select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">สมรรถนะ</label>
+                            <select name="competency" class="w-full border p-2 rounded"><option value="numerical">Numerical</option><option value="algebraic">Algebraic</option><option value="visual">Visual</option><option value="data">Data</option><option value="logical">Logical</option><option value="applied">Applied</option></select>
+                        </div>
+                    </div>
+                    <div><label class="text-xs font-bold text-slate-500">โจทย์</label><textarea name="question_text" rows="3" class="w-full border p-2 rounded" required></textarea></div>
+                    <div><label class="text-xs font-bold text-slate-500">ตัวเลือก (A-D)</label>
+                        <div class="grid grid-cols-2 gap-2"><input type="text" name="opt0" placeholder="A" class="border p-2 rounded" required><input type="text" name="opt1" placeholder="B" class="border p-2 rounded" required><input type="text" name="opt2" placeholder="C" class="border p-2 rounded" required><input type="text" name="opt3" placeholder="D" class="border p-2 rounded" required></div>
+                    </div>
+                    <div><label class="text-xs font-bold text-slate-500">เฉลย</label><select name="correct_index" class="w-full border p-2 rounded"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div>
+                    <div class="pt-2"><button type="submit" class="w-full bg-slate-800 text-white py-2 rounded font-bold shadow hover:bg-slate-700">บันทึก</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-student-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
+                <h3 class="font-bold text-lg text-slate-700">✏️ แก้ไขข้อมูลนักเรียน</h3>
+                <button onclick="closeModal('edit-student-modal')" class="text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            </div>
+            <div class="p-5">
+                <form id="edit-student-form" class="space-y-4">
+                    <input type="hidden" name="id"> 
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">รหัสนักเรียน (ห้ามซ้ำ)</label><input type="text" name="student_id" class="w-full border p-2 rounded bg-slate-100 font-mono text-slate-600 cursor-not-allowed" readonly></div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">ชื่อ-นามสกุล</label><input type="text" name="full_name" class="w-full border p-2 rounded" required></div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">ระดับชั้น</label>
+                        <select name="grade" class="w-full border p-2 rounded"><option value="P.1">ป.1</option><option value="P.2">ป.2</option><option value="P.3">ป.3</option><option value="P.4">ป.4</option><option value="P.5">ป.5</option><option value="P.6">ป.6</option><option value="M.1">ม.1</option><option value="M.2">ม.2</option><option value="M.3">ม.3</option><option value="Alumni">จบการศึกษา</option></select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1">รหัสผ่านใหม่ (เว้นว่างไว้ถ้าไม่เปลี่ยน)</label><input type="text" name="password" class="w-full border p-2 rounded font-mono" placeholder="กำหนดรหัสผ่านใหม่"></div>
+                    <div class="pt-2"><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold shadow hover:bg-blue-700">บันทึกการแก้ไข</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const curriculum = {
+            "P.1": { "1": ["จำนวนนับ 1-10", "การบวก (ไม่เกิน 20)", "การลบ (ไม่เกิน 20)"], "2": ["การบวก/ลบ (ไม่เกิน 100)", "รูปเรขาคณิต", "การวัด"] },
+            "P.2": { "1": ["จำนวนนับไม่เกิน 1,000", "การบวก/ลบ", "การคูณ"], "2": ["การหาร", "เวลา", "ปริมาตร"] },
+            "P.3": { "1": ["จำนวนนับไม่เกิน 100,000", "การบวก/ลบ", "เศษส่วน"], "2": ["การหาร", "เงิน", "การวัด"] },
+            "P.4": { "1": ["จำนวนนับ > 100,000", "การคูณ/หาร"], "2": ["เศษส่วน", "ทศนิยม", "รูปสี่เหลี่ยม"] },
+            "P.5": { "1": ["เศษส่วน", "ทศนิยม", "บัญญัติไตรยางศ์"], "2": ["ร้อยละ", "เส้นขนาน", "รูปสี่เหลี่ยม"] },
+            "P.6": { "1": ["ห.ร.ม./ค.ร.น.", "เศษส่วน", "ทศนิยม"], "2": ["รูปสามเหลี่ยม", "รูปหลายเหลี่ยม", "วงกลม"] },
+            "M.1": { "1": ["จำนวนเต็ม", "การสร้างทางเรขาคณิต", "เลขยกกำลัง", "ทศนิยมและเศษส่วน", "รูปเรขาคณิต 2 มิติและ 3 มิติ"], "2": ["สมการเชิงเส้นตัวแปรเดียว", "อัตราส่วนและร้อยละ", "กราฟและความสัมพันธ์", "สถิติ"] },
+            "M.2": { "1": ["ทฤษฎีบทพีทาโกรัส", "จำนวนจริง", "พหุนาม"], "2": ["สถิติ", "การเท่ากันทุกประการ", "เส้นขนาน"] },
+            "M.3": { "1": ["อสมการ", "แยกตัวประกอบ", "สมการกำลังสอง"], "2": ["ระบบสมการ", "วงกลม", "ความน่าจะเป็น"] }
+        };
+        function updateChapterDropdown() {
+            const form = document.getElementById('question-form');
+            const grade = form.querySelector('[name="grade"]').value;
+            const semester = form.querySelector('[name="semester"]').value;
+            const chapterSelect = document.getElementById('modal-chapter-select');
+            chapterSelect.innerHTML = '<option value="" disabled selected>-- เลือกบท --</option>';
+            const chapters = curriculum[grade]?.[semester] || [];
+            chapters.forEach(chap => { chapterSelect.innerHTML += `<option value="${chap}">${chap}</option>`; });
+            chapterSelect.innerHTML += '<option disabled>──────</option><option value="O-NET">O-NET</option>';
+        }
+    </script>
+
+    <script type="module">
+        import { supabase } from './js/config.js';
+        const { createClient } = window.supabase;
+
+        // [IMPORTANT] ใส่ SERVICE_ROLE_KEY ตรงนี้
+        const SUPABASE_URL = "https://fhsbpyvzxypsxtxpulxf.supabase.co"; 
+        const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoc2JweXZ6eHlwc3h0eHB1bHhmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODI4ODU3MywiZXhwIjoyMDgzODY0NTczfQ.dCS1QvRe1rpv5SiLmz_xlMkGMOeppOolRCZjTz1abgA"; 
+
+        const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        });
+
+        if (SERVICE_ROLE_KEY === "YOUR_SERVICE_ROLE_KEY") {
+            document.getElementById('setup-warning').classList.remove('hidden');
+        }
+
+        // --- AUTH ---
+        let currentUser = null;
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) { currentUser = session.user; switchTab('manage'); } else { window.location.href = 'index.html'; }
+        }
+        checkSession();
+
+        window.handleLogout = async () => { await supabase.auth.signOut(); window.location.href = 'index.html'; }
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-slate-900', 'text-white', 'border-slate-900');
+                btn.classList.add('text-slate-500', 'border-transparent');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active', 'bg-slate-900', 'text-white', 'border-slate-900');
+            document.getElementById('view-manage').classList.add('hidden');
+            document.getElementById('view-students').classList.add('hidden');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            if(tab === 'manage') fetchQuestions();
+            if(tab === 'students') fetchStudents();
+        }
+        window.closeModal = (id) => { document.getElementById(id).classList.add('hidden'); };
+
+
+        // ================= STUDENT LOGIC =================
+
+        // 1. Fetch Students
+        window.fetchStudents = async () => {
+            const tbody = document.getElementById('students-table-body');
+            const { data, error } = await supabase.from('students').select('*').order('student_id', { ascending: true });
+            if (error) { tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-500">Error: ${error.message}</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">ยังไม่มีข้อมูลนักเรียน</td></tr>'; document.getElementById('student-count').textContent = '0'; return; }
+            document.getElementById('student-count').textContent = data.length;
+            tbody.innerHTML = data.map(s => `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-3 pl-4 font-mono font-bold text-slate-600 text-sm">${s.student_id}</td>
+                    <td class="p-3 font-bold text-slate-800 text-sm">${s.full_name}</td>
+                    <td class="p-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">${s.grade ? s.grade.replace('P.', 'ป.').replace('M.', 'ม.') : '-'}</span></td>
+                    <td class="p-3 font-mono text-xs text-slate-400">${s.password}</td>
+                    <td class="p-3 text-right pr-4 flex justify-end gap-2">
+                        <button onclick="openEditStudent(${s.id})" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition">แก้ไข</button>
+                        <button onclick="promoteOneStudent(this, ${s.id}, '${s.full_name}')" class="text-yellow-700 bg-yellow-50 hover:bg-yellow-100 px-2 py-1 rounded text-xs font-bold transition flex items-center gap-1">⬆</button>
+                        <button onclick="deleteStudent(${s.id}, '${s.student_id}')" class="text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded text-xs font-bold transition">ลบ</button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // 2. Add Student (With Grade Metadata)
+        document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button');
+            btn.textContent = "Processing..."; btn.disabled = true;
+
+            const student_id = form.student_id.value.trim();
+            const full_name = form.full_name.value.trim();
+            const grade = form.grade.value;
+            const password = form.password.value.trim();
+            const email = `${student_id}@school.local`;
+
+            // A. Create Auth User (Fix: Include Grade)
+            const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+                email: email,
+                password: password,
+                email_confirm: true,
+                user_metadata: { name: full_name, grade: grade } 
+            });
+
+            if (authError) {
+                alert("Auth Error: " + authError.message);
+                btn.textContent = "บันทึก"; btn.disabled = false;
+                return;
+            }
+
+            // B. Insert to Database
+            const { error: dbError } = await supabase.from('students').insert({
+                student_id: student_id,
+                full_name: full_name,
+                grade: grade,
+                password: password
+            });
+
+            if (dbError) { alert("Database Error: " + dbError.message); } 
+            else {
+                alert("✅ เพิ่มนักเรียนสำเร็จ!");
+                form.reset(); form.password.value = "123456";
+                fetchStudents();
+            }
+            btn.textContent = "บันทึกข้อมูล"; btn.disabled = false;
+        });
+
+        // 3. Sync Users (Fix Name & Grade)
+        window.syncAuthUsers = async () => {
+            if(!confirm("ระบบจะตรวจสอบและซ่อมแซมข้อมูล Login (Sync)\nยืนยัน?")) return;
+            
+            const { data: students } = await supabase.from('students').select('*');
+            const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+            
+            let createdCount = 0;
+            let updatedCount = 0;
+
+            for (const s of students) {
+                const email = `${s.student_id}@school.local`;
+                const existingUser = users.find(u => u.email === email);
+
+                if (!existingUser) {
+                    // Create New
+                    const { error } = await supabaseAdmin.auth.admin.createUser({
+                        email: email,
+                        password: s.password,
+                        email_confirm: true,
+                        user_metadata: { name: s.full_name, grade: s.grade }
+                    });
+                    if (!error) createdCount++;
+                } else {
+                    // Fix Metadata (Name & Grade)
+                    const currentName = existingUser.user_metadata?.name;
+                    const currentGrade = existingUser.user_metadata?.grade;
+                    
+                    if (currentName !== s.full_name || currentGrade !== s.grade) {
+                        const { error } = await supabaseAdmin.auth.admin.updateUserById(
+                            existingUser.id,
+                            { user_metadata: { name: s.full_name, grade: s.grade } }
+                        );
+                        if (!error) updatedCount++;
+                    }
+                }
+            }
+            alert(`✅ Sync เสร็จสิ้น!\n- สร้างใหม่: ${createdCount} คน\n- ซ่อมข้อมูล: ${updatedCount} คน`);
+        }
+
+        // 4. Edit Student
+        window.openEditStudent = async (id) => {
+            const { data } = await supabase.from('students').select('*').eq('id', id).single();
+            const form = document.getElementById('edit-student-form');
+            form.id.value = data.id; form.student_id.value = data.student_id;
+            form.full_name.value = data.full_name; form.grade.value = data.grade;
+            form.password.value = ""; 
+            document.getElementById('edit-student-modal').classList.remove('hidden');
+        };
+
+        document.getElementById('edit-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = e.target;
+            const full_name = f.full_name.value.trim();
+            const grade = f.grade.value;
+            const updates = { full_name: full_name, grade: grade };
+            
+            const authUpdates = { user_metadata: { name: full_name, grade: grade } }; // Update both
+
+            if (f.password.value && f.password.value.trim() !== "") {
+                const newPass = f.password.value.trim();
+                updates.password = newPass;
+                authUpdates.password = newPass;
+            }
+
+            const email = `${f.student_id.value}@school.local`;
+            const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+            const user = users.users.find(u => u.email === email);
+            if (user) {
+                await supabaseAdmin.auth.admin.updateUserById(user.id, authUpdates);
+            }
+
+            const { error } = await supabase.from('students').update(updates).eq('id', f.id.value);
+            if(error) alert("Error: " + error.message);
+            else { alert("แก้ไขเรียบร้อย"); closeModal('edit-student-modal'); fetchStudents(); }
+        });
+
+        // 5. Delete
+        window.deleteStudent = async (id, student_id) => {
+            if(!confirm("ยืนยันลบ?")) return;
+            const email = `${student_id}@school.local`;
+            const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+            const user = users.users.find(u => u.email === email);
+            if (user) await supabaseAdmin.auth.admin.deleteUser(user.id);
+            await supabase.from('students').delete().eq('id', id);
+            fetchStudents();
+        }
+
+        // 6. Promote
+        window.promoteOneStudent = async (btn, id, name) => {
+            if(!confirm(`เลื่อนชั้นให้ "${name}"?`)) return;
+            const { error } = await supabase.rpc('promote_single_student', { target_id: id });
+            if(!error) { await fetchStudents(); syncAuthUsers(); } // Auto Sync after promote
+        }
+        window.promoteAllStudents = async () => {
+            if(!confirm("เลื่อนชั้นทั้งระบบ?")) return;
+            const { error } = await supabase.rpc('promote_all_students');
+            if(!error) { alert("Success!"); await fetchStudents(); syncAuthUsers(); } // Auto Sync
+        }
+
+        // --- Exam Logic ---
+        window.fetchQuestions = async () => {
+            const tbody = document.getElementById('questions-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">Loading...</td></tr>';
+            let query = supabase.from('advanced_questions').select('*').order('id', { ascending: false }).limit(50);
+            const grade = document.getElementById('filter-grade').value;
+            const sem = document.getElementById('filter-semester').value;
+            const chap = document.getElementById('filter-chapter').value;
+            if(grade !== 'all') query = query.eq('grade', grade);
+            if(sem !== 'all') query = query.eq('semester', sem);
+            if(chap) query = query.ilike('chapter', `%${chap}%`);
+            const { data, error } = await query;
+            if(error) { alert("Error: " + error.message); return; }
+            tbody.innerHTML = data.length ? data.map(q => `
+                <tr class="hover:bg-slate-50 transition border-b">
+                    <td class="p-4 font-mono text-xs text-slate-500">#${q.id}</td>
+                    <td class="p-4 truncate max-w-xs text-slate-700 font-bold" title="${q.question_text}">${q.question_text.substring(0, 40)}...</td>
+                    <td class="p-4"><span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">${q.chapter}</span></td>
+                    <td class="p-4 capitalize text-xs text-slate-500">${q.competency}</td>
+                    <td class="p-4"><span class="text-yellow-600 font-bold text-xs">Lv.${q.level}</span></td>
+                    <td class="p-4 text-right">
+                        <button onclick="editQuestion(${q.id})" class="text-blue-600 hover:text-blue-800 font-bold text-xs px-2">แก้ไข</button>
+                        <button onclick="deleteQuestion(${q.id})" class="text-red-400 hover:text-red-600 font-bold text-xs px-2">ลบ</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="p-8 text-center text-slate-400">ไม่พบข้อมูล</td></tr>';
+        };
+        window.openAddModal = () => { const form = document.getElementById('question-form'); form.reset(); form.id.value = ""; form.querySelector('[name="semester"]').value = "1"; form.querySelector('[name="grade"]').value = "M.1"; updateChapterDropdown(); document.getElementById('question-modal').classList.remove('hidden'); };
+        window.editQuestion = async (id) => { const { data } = await supabase.from('advanced_questions').select('*').eq('id', id).single(); const form = document.getElementById('question-form'); form.id.value = data.id; form.question_text.value = data.question_text; form.grade.value = data.grade; form.semester.value = data.semester || '1'; updateChapterDropdown(); setTimeout(() => { form.chapter.value = data.chapter; }, 50); form.competency.value = data.competency; form.opt0.value = data.options[0]; form.opt1.value = data.options[1]; form.opt2.value = data.options[2]; form.opt3.value = data.options[3]; form.correct_index.value = data.correct_option_index; document.getElementById('question-modal').classList.remove('hidden'); }
+        window.deleteQuestion = async (id) => { if(confirm("ลบข้อสอบนี้?")) { await supabase.from('advanced_questions').delete().eq('id', id); fetchQuestions(); } }
+        document.getElementById('question-form').addEventListener('submit', async (e) => { e.preventDefault(); const f = e.target; const payload = { grade: f.grade.value, semester: f.semester.value, chapter: f.chapter.value, competency: f.competency.value, question_text: f.question_text.value, options: [f.opt0.value, f.opt1.value, f.opt2.value, f.opt3.value], correct_option_index: parseInt(f.correct_index.value) }; let error; if(f.id.value) ({ error } = await supabase.from('advanced_questions').update(payload).eq('id', f.id.value)); else ({ error } = await supabase.from('advanced_questions').insert(payload)); if(error) alert("Error: " + error.message); else { closeModal('question-modal'); fetchQuestions(); } });
+    </script>
+</body>
+</html>
