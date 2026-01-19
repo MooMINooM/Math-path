@@ -4,9 +4,6 @@ import { saveTestResult, getTestHistory } from './db.js';
 import { MathGame } from './game.js';
 import { switchTab, drawSpiderChart } from './ui.js';
 
-// ==========================================
-// 📚 ข้อมูลหลักสูตร (Curriculum Data)
-// ==========================================
 const curriculumData = {
     "P.1": { "1": ["จำนวนนับ 1-10", "การบวก (ไม่เกิน 20)", "การลบ (ไม่เกิน 20)"], "2": ["การบวก/ลบ (ไม่เกิน 100)", "รูปเรขาคณิต", "การวัด"] },
     "P.2": { "1": ["จำนวนนับไม่เกิน 1,000", "การบวก/ลบ", "การคูณ"], "2": ["การหาร", "เวลา", "ปริมาตร"] },
@@ -19,16 +16,12 @@ const curriculumData = {
     "M.3": { "1": ["อสมการ", "แยกตัวประกอบ", "สมการกำลังสอง"], "2": ["ระบบสมการ", "วงกลม", "ความน่าจะเป็น"] }
 };
 
-// ==========================================
-// ⚙️ สถานะระบบ
-// ==========================================
 const game = new MathGame();
 let timerInterval = null;
 let currentUser = null;
 let userRealGrade = 'M.1'; 
-let currentSem = '1'; 
+let currentSem = '1';
 
-// --- ฟังก์ชัน UI ---
 window.startAdaptiveTest = async () => { await runGame('adaptive'); };
 window.startSpecificTest = async (competency) => { await runGame('specific', competency); };
 window.startChapterTest = async (chapterName) => { await runGame('chapter', null, chapterName); };
@@ -46,9 +39,6 @@ window.closeResultModal = () => {
     loadHistoryData(); 
 };
 
-// ==========================================
-// 🚀 ระบบควบคุมเกม
-// ==========================================
 async function runGame(mode, competency = null, chapterName = null) {
     if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนครับ");
     const targetGrade = userRealGrade || 'M.1';
@@ -76,12 +66,6 @@ function formatGrade(gradeCode) {
     return gradeCode.replace('P.', 'ป.').replace('M.', 'ม.');
 }
 
-// ==========================================
-// 🎮 ระบบแสดงโจทย์และตัวเลือก
-// ==========================================
-
-// ... (ส่วน Import และ Curriculum คงเดิม) ...
-
 function updateQuestionUI() { 
     const q = game.getCurrentQuestion(); 
     if (!q) { finishTest(); return; }
@@ -89,25 +73,20 @@ function updateQuestionUI() {
     document.getElementById('current-question-num').textContent = game.currentIndex + 1;
     document.getElementById('total-questions').textContent = game.questions.length;
     
-    // แสดงโจทย์
     const displayDiv = document.getElementById('question-display');
     displayDiv.innerHTML = q.questionText; 
     
     document.getElementById('progress-bar').style.width = `${(game.currentIndex / game.questions.length) * 100}%`;
-    
     const container = document.getElementById('answer-options');
     container.innerHTML = '';
     
     q.options.forEach((opt, idx) => {
         const btn = document.createElement('button');
         btn.className = 'bg-white border-2 border-slate-200 hover:border-slate-800 text-slate-700 text-xl font-bold py-4 px-6 rounded transition-all shadow-sm flex items-center gap-3';
-        
-        // ปรับปรุง: ใช้ class "math-content" หรือปล่อยให้ MutationObserver ตรวจเจอเอง
         btn.innerHTML = `
             <span class="bg-slate-100 text-slate-500 text-sm px-2 py-1 rounded min-w-[30px] text-center">${['A','B','C','D'][idx]}</span> 
-            <span class="math-target">${opt}</span>
+            <div class="math-target flex-1 text-left">${opt}</div>
         `;
-        
         btn.onclick = () => {
             const isCorrect = game.checkAnswer(idx);
             btn.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50', isCorrect ? 'border-green-500' : 'border-red-500');
@@ -117,63 +96,117 @@ function updateQuestionUI() {
         };
         container.appendChild(btn);
     });
-
-    // เพิ่มความมั่นใจ: เรียก Render ทันทีหนึ่งครั้งหลังสร้างปุ่มเสร็จ
-    renderMath();
 }
 
-// ระบบ AUTO-RENDER (ถูกต้องแล้ว)
-function renderMath() {
-  const el = document.getElementById('question-display');
-  if (el && window.renderMathInElement) {
-    renderMathInElement(el, {
-      delimiters: [
-        { left: '\\(', right: '\\)', display: false },
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false }
-      ],
-      throwOnError: false
+function calculateDailyDecay(history) {
+    if (!history || history.length === 0) return 0;
+    const lastTestDate = new Date(history[0].created_at);
+    const today = new Date();
+    lastTestDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diffTime = today - lastTestDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays * 50 : 0;
+}
+
+async function loadHistoryData() {
+    if(!currentUser) return;
+    const { data: history, error } = await getTestHistory(currentUser.id);
+    if (error || !history || history.length === 0) {
+        drawSpiderChart({ numerical: 0, algebraic: 0, visual: 0, data: 0, logical: 0, applied: 0 });
+        return;
+    }
+
+    // 1. ประมวลผลคะแนนย้อนหลังตามลำดับเวลา (เก่า -> ใหม่) เพื่อทำ Cap/Floor
+    const sortedHistory = [...history].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const currentXPs = { numerical: 0, algebraic: 0, visual: 0, data: 0, logical: 0, applied: 0 };
+    const aggregateAccuracy = { numerical: { c: 0, t: 0 }, algebraic: { c: 0, t: 0 }, visual: { c: 0, t: 0 }, data: { c: 0, t: 0 }, logical: { c: 0, t: 0 }, applied: { c: 0, t: 0 } };
+
+    sortedHistory.forEach(h => {
+        const stats = h.competency_stats || {};
+        Object.keys(currentXPs).forEach(k => {
+            if (stats[k]) {
+                let sessionCorrect = 0, sessionTotal = 0;
+                if (typeof stats[k] === 'object') {
+                    sessionCorrect = stats[k].correct || 0;
+                    sessionTotal = stats[k].total || 0;
+                } else {
+                    sessionCorrect = parseInt(stats[k]) || 0;
+                    sessionTotal = sessionCorrect;
+                }
+                const sessionIncorrect = sessionTotal - sessionCorrect;
+                const delta = (sessionCorrect * 5) - (sessionIncorrect * 2);
+
+                // [Logic: Cap 400 (Lv 5) & Floor 0 (Lv 1)]
+                currentXPs[k] = Math.max(0, Math.min(400, currentXPs[k] + delta));
+                
+                aggregateAccuracy[k].c += sessionCorrect;
+                aggregateAccuracy[k].t += sessionTotal;
+            }
+        });
     });
-  }
-}
 
-// ... (ส่วนที่เหลือของโค้ดคุณถูกต้องสมบูรณ์แล้ว) ...
+    // 2. หัก Daily Decay จากแต้มล่าสุด
+    const dailyPenalty = calculateDailyDecay(history);
+    const radarScores = {};
 
-function initMathObserver() {
-    const target = document.getElementById('content-test');
-    if (!target) return;
+    Object.keys(currentXPs).forEach(k => {
+        const finalXP = Math.max(0, currentXPs[k] - dailyPenalty);
+        let level = Math.floor(finalXP / 100) + 1;
+        level = Math.min(level, 5); // ล็อค Max Lv.5
 
-    // ระบบตรวจจับการเปลี่ยนแปลงข้อความ ถ้ามีการเปลี่ยนโจทย์จะสั่ง Render ใหม่ทันที
-    const observer = new MutationObserver(() => {
-        renderMath();
+        const progress = (level === 5) ? 100 : (finalXP % 100);
+
+        const lvEl = document.getElementById(`lv-${k}`);
+        if(lvEl) lvEl.textContent = level;
+
+        const bar = document.getElementById(`bar-${k}`);
+        if(bar) bar.style.width = `${progress}%`;
+
+        const acc = aggregateAccuracy[k];
+        radarScores[k] = acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : 0;
     });
 
-    observer.observe(target, { childList: true, subtree: true, characterData: true });
+    drawSpiderChart(radarScores);
+    updateCenterStats(history);
 }
 
-// ==========================================
-// ⚙️ เริ่มต้นแอป
-// ==========================================
+function renderSkillsGrid() {
+    const container = document.getElementById('skills-grid');
+    if (!container) return;
+    const skills = [
+        { id: 'numerical', name: 'Numerical', icon: '🧮', color: 'blue' },
+        { id: 'algebraic', name: 'Algebraic', icon: '⚖️', color: 'yellow' },
+        { id: 'visual', name: 'Visual', icon: '📐', color: 'emerald' },
+        { id: 'data', name: 'Data', icon: '📊', color: 'rose' },
+        { id: 'logical', name: 'Logical', icon: '🧩', color: 'indigo' },
+        { id: 'applied', name: 'Applied', icon: '🛠️', color: 'orange' }
+    ];
+    container.innerHTML = skills.map(skill => `
+        <div onclick="startSpecificTest('${skill.id}')" 
+             class="bg-slate-50 hover:bg-${skill.color}-50 border border-slate-100 hover:border-${skill.color}-200 rounded-xl p-3 cursor-pointer transition-all group flex flex-col justify-between min-h-[90px]">
+            <div class="flex justify-between items-start">
+                <span class="text-xs font-bold text-slate-700">${skill.name}</span>
+                <span class="text-lg">${skill.icon}</span>
+            </div>
+            <div>
+                <div class="flex justify-between text-[9px] font-bold text-slate-500 mb-1">
+                    <span>Lv.<span id="lv-${skill.id}">1</span></span>
+                </div>
+                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="bar-${skill.id}" class="h-full bg-${skill.color}-500 w-0 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
 
-document.addEventListener('DOMContentLoaded', async () => { 
-    initMathObserver(); // เปิดระบบตรวจจับการเปลี่ยนโจทย์
-    await checkAuth(); 
-    setupEventListeners(); 
-});
-
-// ==========================================
-// 📊 การจัดการผู้ใช้และสถิติ
-// ==========================================
+// --- ฟังก์ชันอื่นๆ (Authentication & UI Setup) ---
 
 async function checkAuth() { 
     currentUser = await getCurrentUser(); 
-    if (currentUser) { 
-        await checkRoleAndRedirect(); 
-        await fetchRealUserGrade(); 
-        showApp(); 
-    } else { 
-        showLogin(); 
-    } 
+    if (currentUser) { await checkRoleAndRedirect(); await fetchRealUserGrade(); showApp(); } 
+    else { showLogin(); } 
 }
 
 async function fetchRealUserGrade() {
@@ -193,6 +226,7 @@ function showLogin() { document.getElementById('login-screen').classList.remove(
 function showApp() { 
     document.getElementById('login-screen').classList.add('hidden'); 
     document.getElementById('main-app').classList.remove('hidden'); 
+    renderSkillsGrid();
     updateUserDisplay(); 
     renderLessonLibrary(); 
     switchTab('select'); 
@@ -221,7 +255,10 @@ async function handleLogin(e) {
 
 async function handleLogout() { await logout(); currentUser = null; showLogin(); }
 
-function startTimer() { let s = 0; clearInterval(timerInterval); timerInterval = setInterval(() => { s++; const m = Math.floor(s/60); const sec = s%60; const el = document.getElementById('timer'); if(el) el.textContent = `${m}:${sec.toString().padStart(2, '0')}`; }, 1000); }
+function startTimer() { 
+    let s = 0; clearInterval(timerInterval); 
+    timerInterval = setInterval(() => { s++; const m = Math.floor(s/60); const sec = s%60; const el = document.getElementById('timer'); if(el) el.textContent = `${m}:${sec.toString().padStart(2, '0')}`; }, 1000); 
+}
 
 async function finishTest() { 
     clearInterval(timerInterval); 
@@ -274,30 +311,11 @@ function updateUserDisplay() {
     }
 }
 
-async function loadHistoryData() {
-    if(!currentUser) return;
-    const { data: history } = await getTestHistory(currentUser.id);
-    if (!history) return;
-    const avg = (arr) => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
-    const compScores = { numerical: [], algebraic: [], visual: [], data: [], logical: [], applied: [] };
-    history.forEach(h => {
-        const stats = h.competency_stats || {};
-        Object.keys(compScores).forEach(k => { if (stats[k] > 0) compScores[k].push(stats[k]); });
-    });
-    drawSpiderChart({ numerical: avg(compScores.numerical), algebraic: avg(compScores.algebraic), visual: avg(compScores.visual), data: avg(compScores.data), logical: avg(compScores.logical), applied: avg(compScores.applied) });
-    Object.keys(compScores).forEach(k => {
-        const score = avg(compScores[k]);
-        const bar = document.getElementById(`bar-${k}`);
-        if(bar) bar.style.width = `${score}%`;
-    });
-    updateCenterStats(history);
-}
-
 function updateCenterStats(history) {
-    const avg = (arr) => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+    const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
     const totalQuestions = history.reduce((sum, h) => sum + (h.correct_answers || 0), 0);
     document.getElementById('stat-total-mission').textContent = history.length;
-    document.getElementById('stat-accuracy').textContent = `${avg(history.map(h=>h.score))}%`;
+    document.getElementById('stat-accuracy').textContent = `${avg(history.map(h => h.score))}%`;
     document.getElementById('stat-questions').textContent = totalQuestions;
     const container = document.getElementById('center-stats-list');
     if(!container) return;
@@ -318,3 +336,9 @@ function updateCenterStats(history) {
         container.appendChild(item);
     });
 }
+
+document.addEventListener('DOMContentLoaded', async () => { 
+    renderSkillsGrid(); 
+    await checkAuth(); 
+    setupEventListeners(); 
+});
