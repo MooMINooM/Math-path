@@ -2,7 +2,7 @@
 <html lang="th" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Grand Archive - Dashboard</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,156 +10,158 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        body { 
+        /* ล็อคโครงสร้างหลักให้พอดีจอ 100% เสมอ */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
             background-color: #f0f4f8; 
-            font-family: 'Sarabun', sans-serif; 
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            font-family: 'Sarabun', sans-serif;
         }
 
-        /* ล็อคหน้าจอไม่ให้เลื่อนในคอมพิวเตอร์ */
-        @media (min-width: 1024px) {
-            body { overflow: hidden; height: 100vh; }
-        }
+        body { display: flex; flex-direction: column; }
 
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        /* ระบบเลื่อนภายในบล็อกเพื่อไม่ให้หน้าจอหลักขยับ */
+        .custom-scroll::-webkit-scrollbar { width: 3px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .bg-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+        .bg-pattern { background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px); background-size: 15px 15px; }
         
         /* สไตล์ MathML */
-        .math-content { line-height: 1.6; }
-        math { font-family: "Latin Modern Math", serif; font-size: 1.15em; }
+        math { font-family: "Latin Modern Math", serif; font-size: 1.1em; }
 
-        /* จัดการ Layer ของหน้าทำข้อสอบให้ทับหน้าหลักเสมอ */
+        /* จัดการหน้าจอ Dashboard ให้แบ่งพื้นที่แบบสัดส่วน (%) */
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                display: grid;
+                grid-template-cols: 22% 43% 35%; /* แบ่งสัดส่วนตามความกว้างหน้าจอ */
+                gap: 1rem;
+                height: calc(100vh - 4.5rem); /* หักลบ Header และ Padding */
+            }
+        }
+
+        /* สำหรับมือถือ: เปลี่ยนเป็นเลื่อนแนวตั้งแต่แต่ละบล็อกห้ามล้น */
+        @media (max-width: 1023px) {
+            body { overflow-y: auto; }
+            .dashboard-grid { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem; }
+            .card-fixed { min-height: 350px; }
+        }
+
+        /* เลเยอร์ทับหน้าจอ (Overlay) */
         #content-test {
-            position: fixed; /* ใช้ fixed เพื่อให้เต็มจอเสมอไม่ว่าจะเลื่อนหน้าจอไปแค่ไหน */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 40;
-            background-color: rgba(15, 23, 42, 0.95); /* สีพื้นหลังเข้มขึ้นเพื่อให้โฟกัสโจทย์ */
-            backdrop-filter: blur(8px);
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
 <body class="bg-pattern">
 
-    <header class="h-14 bg-white/90 backdrop-blur shadow-sm border-b border-slate-200 flex-shrink-0 z-30 px-6 flex justify-between items-center sticky top-0">
+    <header class="h-14 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 flex-shrink-0 z-40 px-6 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-lg shadow text-yellow-400 font-bold">GA</div>
-            <h1 class="text-base font-bold text-slate-900 tracking-tight">Grand Archive</h1>
+            <div class="w-8 h-8 bg-slate-900 rounded flex items-center justify-center text-yellow-400 font-bold">GA</div>
+            <h1 class="text-base font-bold text-slate-900">Grand Archive</h1>
         </div>
-        <button id="btn-logout" class="text-sm font-bold text-red-500 hover:text-red-700 uppercase tracking-wider">Logout</button>
+        <button id="btn-logout" class="text-xs font-bold text-red-500 uppercase">Logout</button>
     </header>
 
-    <main id="app-content" class="flex-1 min-h-0 relative flex flex-col">
+    <main id="app-content" class="flex-1 relative p-3 md:p-4 min-h-0">
         
-        <div id="login-screen" class="absolute inset-0 z-50 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-slate-700 text-center">
+        <div id="login-screen" class="absolute inset-0 z-[60] bg-slate-900 flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
                 <div class="text-5xl mb-4">🎓</div>
-                <h2 class="text-xl font-bold text-slate-900 mb-6">เข้าสู่ระบบ</h2>
-                <form id="login-form" class="space-y-4">
-                    <input type="text" id="student-id" class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 font-bold text-center text-lg" placeholder="Email / ID" required>
-                    <input type="password" id="password" class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 font-bold text-center text-lg" placeholder="Password" required>
-                    <div id="login-error" class="hidden text-red-600 text-sm font-bold"></div>
-                    <button type="submit" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-all text-lg shadow-lg">LOGIN</button>
+                <h2 class="text-xl font-bold mb-6">เข้าสู่ระบบ</h2>
+                <form id="login-form" class="space-y-4 text-center">
+                    <input type="text" id="student-id" class="w-full p-3 border-2 rounded-xl bg-slate-50 font-bold text-center" placeholder="ID" required>
+                    <input type="password" id="password" class="w-full p-3 border-2 rounded-xl bg-slate-50 font-bold text-center" placeholder="PASSWORD" required>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold shadow-lg">LOGIN</button>
                 </form>
             </div>
         </div>
 
-        <div id="main-app" class="hidden flex-1 flex flex-col w-full max-w-7xl mx-auto p-4">
+        <div id="main-app" class="hidden h-full w-full max-w-[1600px] mx-auto">
             
-            <div id="content-select" class="tab-content flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4">
+            <div id="content-select" class="tab-content dashboard-grid h-full">
                 
-                <div class="lg:col-span-3 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-[450px] lg:h-auto">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-                        <h3 class="font-bold text-slate-700 flex items-center gap-2 text-lg">📖 ห้องสมุดบทเรียน</h3>
-                        <div class="bg-slate-200 p-1 rounded-lg grid grid-cols-2 gap-1 mt-3">
-                            <button onclick="setSemester('1')" id="sem-btn-1" class="rounded-md text-sm font-bold bg-white shadow py-2">เทอม 1</button>
-                            <button onclick="setSemester('2')" id="sem-btn-2" class="rounded-md text-sm font-bold text-slate-500 py-2">เทอม 2</button>
+                <div class="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full">
+                    <div class="p-4 border-b bg-slate-50 flex-shrink-0">
+                        <h3 class="font-bold text-slate-700 text-base mb-3">📖 บทเรียน</h3>
+                        <div class="bg-slate-200 p-1 rounded-lg grid grid-cols-2 gap-1">
+                            <button onclick="setSemester('1')" id="sem-btn-1" class="rounded-md text-xs font-bold bg-white py-1.5 shadow">เทอม 1</button>
+                            <button onclick="setSemester('2')" id="sem-btn-2" class="rounded-md text-xs font-bold text-slate-500 py-1.5">เทอม 2</button>
                         </div>
                     </div>
                     <div id="chapter-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll"></div>
                 </div>
 
-                <div class="lg:col-span-5 flex flex-col gap-4">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col flex-1 overflow-hidden min-h-[500px] lg:min-h-0">
-                        <div class="flex items-center gap-5 mb-6 border-b border-slate-100 pb-4">
-                            <img id="user-avatar" src="" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-yellow-400 bg-white" alt="Avatar">
-                            <div>
-                                <h2 id="display-name" class="text-xl md:text-2xl font-bold text-slate-900 truncate">Loading...</h2>
-                                <span id="display-grade" class="inline-block bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded mt-1">...</span>
+                <div class="flex flex-col gap-4 h-full min-h-0">
+                    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col overflow-hidden min-h-0">
+                        <div class="flex items-center gap-4 mb-4 border-b pb-4 flex-shrink-0">
+                            <img id="user-avatar" src="" class="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-yellow-400" alt="Avatar">
+                            <div class="min-w-0">
+                                <h2 id="display-name" class="text-lg md:text-xl font-bold text-slate-900 truncate">Loading...</h2>
+                                <span id="display-grade" class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded">GRADE</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 mb-6">
-                            <div class="bg-blue-50 p-3 rounded-xl text-center"><div id="stat-total-mission" class="text-xl font-bold text-blue-700">0</div><div class="text-[10px] text-blue-500 font-bold uppercase">Missions</div></div>
-                            <div class="bg-emerald-50 p-3 rounded-xl text-center"><div id="stat-accuracy" class="text-xl font-bold text-emerald-700">0%</div><div class="text-[10px] text-emerald-500 font-bold uppercase">Accuracy</div></div>
-                            <div class="bg-orange-50 p-3 rounded-xl text-center"><div id="stat-questions" class="text-xl font-bold text-orange-700">0</div><div class="text-[10px] text-orange-500 font-bold uppercase">Solved</div></div>
+                        <div class="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
+                            <div class="bg-blue-50 p-2 rounded-xl text-center border border-blue-100"><div id="stat-total-mission" class="text-xl font-bold text-blue-700">0</div><div class="text-[9px] text-blue-500 font-bold uppercase">Missions</div></div>
+                            <div class="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100"><div id="stat-accuracy" class="text-xl font-bold text-emerald-700">0%</div><div class="text-[9px] text-emerald-500 font-bold uppercase">Accuracy</div></div>
+                            <div class="bg-orange-50 p-2 rounded-xl text-center border border-orange-100"><div id="stat-questions" class="text-xl font-bold text-orange-700">0</div><div class="text-[9px] text-orange-500 font-bold uppercase">Solved</div></div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-2" id="center-stats-list"></div>
                     </div>
 
-                    <div onclick="startAdaptiveTest()" class="h-20 lg:h-24 bg-slate-900 rounded-2xl shadow-lg relative overflow-hidden group cursor-pointer flex items-center px-6">
-                        <div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-yellow-500 flex items-center justify-center text-2xl shadow-lg mr-4 animate-pulse">⚡</div>
-                        <div class="flex-1"><h3 class="text-lg md:text-xl font-bold text-white">เริ่มภารกิจอัจฉริยะ</h3><p class="text-slate-400 text-xs">AI Smart Mission</p></div>
-                        <span class="bg-white/10 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase">Start</span>
+                    <div onclick="startAdaptiveTest()" class="h-20 bg-slate-900 rounded-2xl shadow-lg flex items-center px-6 flex-shrink-0 cursor-pointer hover:bg-slate-800 transition-all">
+                        <div class="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-2xl mr-4 animate-pulse">⚡</div>
+                        <div class="flex-1"><h3 class="text-lg font-bold text-white">เริ่มภารกิจอัจฉริยะ</h3><p class="text-slate-400 text-[10px]">AI SMART MISSION</p></div>
+                        <span class="bg-white/10 text-white px-4 py-2 rounded-lg text-xs font-bold">START</span>
                     </div>
                 </div>
 
-                <div class="lg:col-span-4 flex flex-col gap-4">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[350px] lg:h-auto">
-                        <div class="p-3 border-b border-slate-100 bg-slate-50 font-bold text-slate-700 text-sm">🛠️ ฝึกฝนทักษะ (Skills)</div>
-                        <div id="skills-grid" class="flex-1 overflow-y-auto p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start"></div>
+                <div class="flex flex-col gap-4 h-full min-h-0">
+                    <div class="flex-[0.6] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-0">
+                        <div class="p-3 border-b bg-slate-50 font-bold text-slate-700 text-sm">🛠️ ทักษะ (Skills)</div>
+                        <div id="skills-grid" class="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-2 content-start custom-scroll"></div>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 h-[350px] lg:h-auto relative">
-                        <h3 class="absolute top-3 left-4 text-[10px] font-bold text-slate-400 uppercase">SKILL RADAR</h3>
-                        <div class="w-full h-full flex items-center justify-center">
-                            <svg id="spider-chart" viewBox="0 0 450 450" preserveAspectRatio="xMidYMid meet" class="h-full w-auto"></svg>
+                    <div class="flex-[0.4] bg-white rounded-2xl shadow-sm border border-slate-200 p-3 flex flex-col relative overflow-hidden min-h-0">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest absolute top-3 left-4">Radar</h3>
+                        <div class="flex-1 flex items-center justify-center min-h-0">
+                            <svg id="spider-chart" viewBox="0 0 450 450" preserveAspectRatio="xMidYMid meet" class="h-full w-full max-h-[220px]"></svg>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="content-test" class="tab-content hidden flex items-center justify-center p-2 md:p-6">
-                <div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden relative">
-                    <div class="bg-slate-900 p-4 flex justify-between items-center text-white">
-                        <div>
-                            <h3 id="test-level-title" class="font-bold text-base md:text-lg">Mission Active</h3>
-                            <p class="text-[10px] md:text-xs text-slate-400 font-bold">Question <span id="current-question-num">1</span> / <span id="total-questions">10</span></p>
-                        </div>
-                        <div id="timer" class="text-xl md:text-2xl font-mono font-bold text-yellow-400">0:00</div>
+            <div id="content-test" class="tab-content hidden flex flex-col items-center justify-center p-4">
+                <div class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+                    <div class="bg-slate-900 p-4 md:p-6 flex justify-between items-center text-white flex-shrink-0">
+                        <div><h3 id="test-level-title" class="font-bold text-lg">Mission Active</h3><p class="text-xs text-slate-400">Question <span id="current-question-num">1</span> / <span id="total-questions">10</span></p></div>
+                        <div id="timer" class="text-2xl font-mono font-bold text-yellow-400">0:00</div>
                     </div>
-                    <div class="h-1.5 bg-slate-800"><div id="progress-bar" class="h-full bg-yellow-500 transition-all duration-300 w-0"></div></div>
-                    
-                    <div class="p-6 md:p-10 overflow-y-auto flex-1 text-center flex flex-col justify-center min-h-0 custom-scroll">
-                        <div id="question-display" class="math-content text-xl md:text-3xl font-bold text-slate-800 leading-relaxed"></div>
+                    <div class="h-2 bg-slate-800"><div id="progress-bar" class="h-full bg-yellow-500 transition-all duration-300 w-0"></div></div>
+                    <div class="flex-1 p-6 md:p-12 overflow-y-auto text-center flex flex-col justify-center custom-scroll min-h-[150px]">
+                        <div id="question-display" class="math-content text-xl md:text-3xl font-bold text-slate-900 leading-relaxed"></div>
                     </div>
-
-                    <div id="answer-options" class="math-content p-4 md:p-6 bg-slate-50 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"></div>
-                    
-                    <div class="p-4 bg-slate-100 text-center flex-shrink-0">
-                        <button id="btn-quit-test" class="text-xs text-slate-400 hover:text-red-600 uppercase font-bold tracking-widest">Abort Mission</button>
-                    </div>
+                    <div id="answer-options" class="p-4 md:p-8 bg-slate-50 border-t grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0"></div>
+                    <div class="p-4 bg-slate-100 text-center"><button id="btn-quit-test" class="text-xs text-slate-400 font-bold hover:text-red-600 uppercase">Abort Mission</button></div>
                 </div>
             </div>
 
-            <div id="result-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4">
-                <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-2 bg-yellow-500"></div>
-                    <div class="text-6xl mb-4">🎉</div>
-                    <h2 class="text-2xl font-bold text-slate-900 mb-1">Mission Complete!</h2>
-                    <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-100 mt-4">
-                        <div class="text-5xl font-extrabold text-yellow-500" id="result-percent">0%</div>
-                        <p class="text-slate-400 text-xs mt-2 font-bold">Correct: <span id="result-score" class="font-bold text-slate-700">0/0</span></p>
+            <div id="result-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4">
+                <div class="bg-white p-10 rounded-3xl shadow-2xl text-center max-w-sm w-full">
+                    <div class="text-7xl mb-6">🎉</div>
+                    <h2 class="text-2xl font-bold mb-2">สำเร็จภารกิจ!</h2>
+                    <div class="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
+                        <div class="text-6xl font-black text-yellow-500 mb-2" id="result-percent">0%</div>
+                        <p class="text-slate-400 text-sm font-bold uppercase">Accuracy Score</p>
                     </div>
-                    <button onclick="window.closeResultModal()" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold shadow-lg">กลับสู่หน้าหลัก</button>
+                    <button onclick="window.closeResultModal()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl">BACK TO HUB</button>
                 </div>
             </div>
-
         </div>
     </main>
 
