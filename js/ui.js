@@ -1,30 +1,27 @@
 // js/ui.js
 export function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    
+    // ซ่อนหน้าจอทำข้อสอบด้วย (กันอาการค้าง)
+    const contentTest = document.getElementById('content-test');
+    if (contentTest) contentTest.classList.add('hidden');
+
     document.querySelectorAll('.nav-tab').forEach(el => {
         el.classList.remove('text-purple-600', 'border-purple-500', 'bg-purple-50');
         el.classList.add('text-gray-600', 'border-transparent');
     });
 
     const content = document.getElementById(`content-${tabId}`);
-    const btn = document.querySelector(`button[data-tab="${tabId}"]`);
-    
     if (content) content.classList.remove('hidden');
-    if (btn) {
-        btn.classList.add('text-purple-600', 'border-purple-500', 'bg-purple-50');
-        btn.classList.remove('text-gray-600', 'border-transparent');
-    }
 }
 
 export function drawSpiderChart(scores) {
     const svg = document.getElementById('spider-chart');
     if(!svg) return;
     
-    // ตั้งค่าจุดศูนย์กลางและรัศมี (ลด radius ลงเล็กน้อยเพื่อให้ text ไม่ตกขอบ)
     const center = 225;
-    const maxRadius = 160; 
+    const maxRadius = 140; 
     
-    // กำหนด 6 แกนสมรรถภาพ
     const categories = [
         { key: 'numerical', name: 'จำนวน & คำนวณ', score: scores.numerical || 0 },
         { key: 'algebraic', name: 'พีชคณิต', score: scores.algebraic || 0 },
@@ -34,63 +31,55 @@ export function drawSpiderChart(scores) {
         { key: 'applied', name: 'การประยุกต์', score: scores.applied || 0 }
     ];
     
-    const totalAxes = categories.length; // 6
+    const totalAxes = categories.length;
     let html = '';
     
-    // 1. วาดเส้น Grid (วงรอบๆ ทีละ 20%)
+    // 1. วาดเส้น Grid (แบ่งเป็น 5 ระดับตาม Level 1-5)
     for (let r = 20; r <= 100; r += 20) {
         const radius = (r / 100) * maxRadius;
         let points = [];
         categories.forEach((_, i) => {
-            // คำนวณมุม: เริ่มที่ -90 องศา (ด้านบนสุด) แล้ววนตามเข็มนาฬิกา
             const angle = (Math.PI * 2 * i / totalAxes) - (Math.PI / 2);
             points.push(`${center + Math.cos(angle) * radius},${center + Math.sin(angle) * radius}`);
         });
-        
-        // วาดเส้น Polygon จางๆ
-        html += `<polygon points="${points.join(' ')}" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>`; 
-        
-        // ใส่ตัวเลข % บอกระดับ (เฉพาะวงนอกสุด)
-        if (r === 100) {
-            html += `<text x="${center + 5}" y="${center - radius + 15}" class="text-[10px] fill-gray-400" font-family="Mali">${r}%</text>`;
-        }
+        html += `<polygon points="${points.join(' ')}" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2 2"/>`;
     }
 
-    // 2. วาดแกนและชื่อกำกับ (Axes & Labels)
+    // 2. วาดแกนและข้อความ
     categories.forEach((cat, i) => {
         const angle = (Math.PI * 2 * i / totalAxes) - (Math.PI / 2);
         const x = center + Math.cos(angle) * maxRadius;
         const y = center + Math.sin(angle) * maxRadius;
+        html += `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="#cbd5e1" stroke-width="1"/>`;
         
-        // เส้นแกนประ
-        html += `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4 4"/>`;
-        
-        // คำนวณตำแหน่งข้อความ (ดันออกไปจากปลายแกนอีกนิดหน่อย)
-        const textRadius = maxRadius + 35;
+        const textRadius = maxRadius + 35; 
         const lx = center + Math.cos(angle) * textRadius;
         const ly = center + Math.sin(angle) * textRadius;
-        
-        html += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" class="text-sm font-bold fill-gray-600" font-family="Mali">${cat.name}</text>`;
+        html += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" style="font-size: 13px; font-weight: 700; fill: #64748b; font-family: 'Sarabun'">${cat.name}</text>`;
     });
 
-    // 3. วาดพื้นที่ข้อมูล (Data Polygon) - สีม่วงโปร่งใส
+    // 3. วาดพื้นที่คะแนน (Mastery Polygon)
     let dataPoints = [];
     categories.forEach((cat, i) => {
         const angle = (Math.PI * 2 * i / totalAxes) - (Math.PI / 2);
-        // แปลง score เต็ม 100 เป็นรัศมี
-        const radius = (cat.score / 100) * maxRadius;
+        
+        // กำหนดรัศมีขั้นต่ำ 10% เพื่อไม่ให้กราฟหายไปเลย และกันไม่ให้เกิน 100%
+        const displayScore = Math.max(10, Math.min(cat.score, 100));
+        const radius = (displayScore / 100) * maxRadius;
         dataPoints.push(`${center + Math.cos(angle) * radius},${center + Math.sin(angle) * radius}`);
     });
     
-    html += `<polygon points="${dataPoints.join(' ')}" fill="rgba(168, 85, 247, 0.4)" stroke="#a855f7" stroke-width="3"/>`;
+    // ใช้สีทองสไตล์หอจดหมายเหตุ พร้อม Drop Shadow
+    html += `<polygon points="${dataPoints.join(' ')}" fill="rgba(197, 160, 89, 0.4)" stroke="#c5a059" stroke-width="3" stroke-linejoin="round" style="filter: drop-shadow(0px 0px 3px rgba(197, 160, 89, 0.5))"/>`;
 
-    // 4. วาดจุดข้อมูล (Data Dots) - จุดกลมๆ ตามมุม
+    // 4. วาดจุดคะแนน (Dots)
     categories.forEach((cat, i) => {
         const angle = (Math.PI * 2 * i / totalAxes) - (Math.PI / 2);
-        const radius = (cat.score / 100) * maxRadius;
+        const displayScore = Math.max(10, Math.min(cat.score, 100));
+        const radius = (displayScore / 100) * maxRadius;
         const x = center + Math.cos(angle) * radius;
         const y = center + Math.sin(angle) * radius;
-        html += `<circle cx="${x}" cy="${y}" r="5" fill="#a855f7" stroke="white" stroke-width="2"/>`;
+        html += `<circle cx="${x}" cy="${y}" r="5" fill="#c5a059" stroke="white" stroke-width="2"/>`;
     });
 
     svg.innerHTML = html;
