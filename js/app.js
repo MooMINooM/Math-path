@@ -34,11 +34,15 @@ window.setSemester = (sem) => {
 };
 
 window.closeResultModal = () => { 
+    // ซ่อน Modal
     document.getElementById('result-modal').classList.add('hidden'); 
+    // ซ่อนหน้าจอทดสอบโดยตรง (กันเหนียว)
+    document.getElementById('content-test').classList.add('hidden'); 
+    // กลับหน้าหลัก
     switchTab('select'); 
+    // โหลดข้อมูลใหม่
     loadHistoryData(); 
 };
-
 async function runGame(mode, competency = null, chapterName = null) {
     if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนครับ");
     const targetGrade = userRealGrade || 'M.1';
@@ -112,15 +116,19 @@ function calculateDailyDecay(history) {
 async function loadHistoryData() {
     if(!currentUser) return;
     const { data: history, error } = await getTestHistory(currentUser.id);
+    
+    // ถ้าไม่มีประวัติ ให้เซ็ตกราฟเป็น 0 ทั้งหมด
     if (error || !history || history.length === 0) {
         drawSpiderChart({ numerical: 0, algebraic: 0, visual: 0, data: 0, logical: 0, applied: 0 });
         return;
     }
 
-    // 1. ประมวลผลคะแนนย้อนหลังตามลำดับเวลา (เก่า -> ใหม่) เพื่อทำ Cap/Floor
-    const sortedHistory = [...history].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    // 1. เตรียมตัวแปรสำหรับคำนวณ
     const currentXPs = { numerical: 0, algebraic: 0, visual: 0, data: 0, logical: 0, applied: 0 };
     const aggregateAccuracy = { numerical: { c: 0, t: 0 }, algebraic: { c: 0, t: 0 }, visual: { c: 0, t: 0 }, data: { c: 0, t: 0 }, logical: { c: 0, t: 0 }, applied: { c: 0, t: 0 } };
+
+    // 2. ประมวลผลคะแนนย้อนหลังตามลำดับเวลา (เก่า -> ใหม่)
+    const sortedHistory = [...history].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     sortedHistory.forEach(h => {
         const stats = h.competency_stats || {};
@@ -134,11 +142,13 @@ async function loadHistoryData() {
                     sessionCorrect = parseInt(stats[k]) || 0;
                     sessionTotal = sessionCorrect;
                 }
+                
                 const sessionIncorrect = sessionTotal - sessionCorrect;
-                const delta = (sessionCorrect * 5) - (sessionIncorrect * 2);
+                // แต้ม Mastery: ถูกได้ 10, ผิดลบ 5 (เพื่อให้กราฟขยับเห็นผลชัดขึ้น)
+                const delta = (sessionCorrect * 10) - (sessionIncorrect * 5);
 
-                // [Logic: Cap 400 (Lv 5) & Floor 0 (Lv 1)]
-                currentXPs[k] = Math.max(0, Math.min(400, currentXPs[k] + delta));
+                // [Logic: Cap 400 (Lv 5) & Floor 0]
+                currentXPs[k] = Math.max(0, Math.min(400, (currentXPs[k] || 0) + delta));
                 
                 aggregateAccuracy[k].c += sessionCorrect;
                 aggregateAccuracy[k].t += sessionTotal;
@@ -146,15 +156,20 @@ async function loadHistoryData() {
         });
     });
 
-    // 2. หัก Daily Decay จากแต้มล่าสุด
+    // 3. หัก Daily Decay (แต้มลดลงตามวันที่ไม่ได้เล่น)
     const dailyPenalty = calculateDailyDecay(history);
     const radarScores = {};
 
     Object.keys(currentXPs).forEach(k => {
         const finalXP = Math.max(0, currentXPs[k] - dailyPenalty);
-        let level = Math.floor(finalXP / 100) + 1;
-        level = Math.min(level, 5); // ล็อค Max Lv.5
+        
+        // --- ส่วนสำคัญ: ส่ง Mastery % (0-100) ไปวาดกราฟ ---
+        // สูตร: (XP ปัจจุบัน / XP สูงสุด 400) * 100
+        radarScores[k] = (finalXP / 400) * 100; 
 
+        // 4. อัปเดต UI เลเวลและ Progress Bar
+        let level = Math.floor(finalXP / 100) + 1;
+        level = Math.min(level, 5); 
         const progress = (level === 5) ? 100 : (finalXP % 100);
 
         const lvEl = document.getElementById(`lv-${k}`);
@@ -162,12 +177,12 @@ async function loadHistoryData() {
 
         const bar = document.getElementById(`bar-${k}`);
         if(bar) bar.style.width = `${progress}%`;
-
-        const acc = aggregateAccuracy[k];
-        radarScores[k] = acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : 0;
     });
 
+    // 5. วาดกราฟใยแมงมุมด้วยค่า Mastery สะสม
     drawSpiderChart(radarScores);
+    
+    // 6. อัปเดตสถิติตัวเลขหน้า Dashboard
     updateCenterStats(history);
 }
 
