@@ -32,12 +32,18 @@ export class MathGame {
         try {
             console.log(`Starting Game -> Mode: ${mode}, Grade: ${userGrade}, Sem: ${semester}, Chapter: ${chapterName || 'All'}`);
             
+            // สร้าง query พื้นฐาน
             let query = supabase
                 .from('advanced_questions')
                 .select('*')
                 .eq('grade', userGrade)
-                .eq('semester', semester);
+                .eq('semester', semester.toString()); // มั่นใจว่าเป็น String
 
+            // --- [จุดที่เพิ่มเข้าไป] บังคับให้ดึงเฉพาะ Level 1 เท่านั้น ---
+            // หมายเหตุ: ใน DB เราเก็บเป็น Text ดังนั้นต้องใช้ "1"
+            query = query.eq('level', "1"); 
+
+            // กรองเพิ่มเติมตามโหมดที่เลือก
             if (mode === 'chapter' && chapterName) {
                 query = query.eq('chapter', chapterName);
             } 
