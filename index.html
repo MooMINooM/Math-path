@@ -3,343 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Grand Archive - Dashboard</title>
+    <title>The Math Archive</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 
     <style>
-        /* บังคับความสมดุลพื้นฐาน */
+        /* --- 1. บังคับฟอนต์ Sarabun ทั้งระบบ --- */
+        :root {
+            --font-main: 'Sarabun', sans-serif;
+            --font-accent: 'Playfair Display', serif;
+            --gold-primary: #c5a059;
+            --gold-light: #ecd4a1;
+            --archive-bg: #efede5; /* พื้นหลังที่ช่วยให้การ์ดขาวเด่นขึ้น */
+        }
+
+        * { 
+            font-family: var(--font-main) !important; 
+            -webkit-font-smoothing: antialiased; 
+        }
+        
+        .royal-text { font-family: var(--font-accent) !important; }
+
         body {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: #f4f1ea;
-            font-family: 'Sarabun', sans-serif;
+            background-color: var(--archive-bg);
+            background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
         }
         
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
+        .dashboard-container { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+        /* --- 2. กรอบรูปโปรไฟล์ Royal Gold --- */
+        .avatar-frame-container {
+            position: relative; width: 85px; height: 85px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-light), var(--gold-primary));
+            padding: 3px; border-radius: 20px; box-shadow: 0 8px 16px rgba(197, 160, 89, 0.2);
         }
+        .avatar-inner-border { width: 100%; height: 100%; border-radius: 17px; border: 2px solid #fff; overflow: hidden; background: #fff; }
+        #user-avatar { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 
-        /* ปรับแต่ง Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f4f1ea; }
-        ::-webkit-scrollbar-thumb { background: #c5a059; border-radius: 4px; }
-
-        /* กรอบแบบฐานเท่ากัน (Balanced Frames) */
+        /* --- 3. การ์ดที่มีมิติ (Depth & Separation) --- */
         .balanced-card {
-            background: #ffffff;
-            border: 1px solid rgba(197, 160, 89, 0.3);
-            border-bottom: 4px solid #1a252f;
-            border-radius: 12px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
+            background: #ffffff; border: 1px solid rgba(26, 37, 47, 0.05);
+            border-bottom: 5px solid #1a252f; border-radius: 24px;
+            height: 100%; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px -5px rgba(26, 37, 47, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        .balanced-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(197, 160, 89, 0.15); border-color: var(--gold-primary); }
 
-        .balanced-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(26, 37, 47, 0.1);
-        }
-
-        .radar-focus {
-            background: radial-gradient(circle at center, #ffffff 0%, #fcfaf7 100%);
-            border: 2px solid #c5a059;
-            box-shadow: inset 0 0 20px rgba(197, 160, 89, 0.1);
-        }
-
-        /* --- แก้ไขส่วนปุ่ม Semester ให้คงที่ (Fixed) --- */
-        .sem-btn-wrapper {
-            display: flex;
-            gap: 4px;
-            background-color: #e2e8f0; /* slate-200 */
-            padding: 3px;
-            border-radius: 8px;
-            width: 130px; /* ล็อกความกว้างกลุ่มปุ่มรวม */
-            height: 34px; /* ล็อกความสูงกลุ่มปุ่มรวม */
-        }
-
-        .sem-btn {
-            flex: 1; /* แบ่งครึ่งเท่ากันเป๊ะ */
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: 800;
-            border-radius: 6px;
-            transition: all 0.2s ease-in-out;
-            border: none;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        /* สถานะปุ่ม Semester */
-        .sem-active {
-            background-color: #ffffff !important;
-            color: #1a252f !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .sem-inactive {
-            background-color: transparent;
-            color: #64748b;
-        }
-
+        /* จุดที่แก้: การแบ่งแยกการ์ดทักษะให้ไม่กลืนกัน */
         .skill-mini-card {
-            background: #ffffff;
-            border: 1.5px solid #f1f5f9;
-            border-radius: 16px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 6px solid var(--gold-primary); 
+            border-radius: 16px !important;
+            background: #ffffff; 
+            padding: 1.25rem !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03); 
+            transition: all 0.3s ease;
+            border-right: 1px solid rgba(0,0,0,0.02);
+            border-top: 1px solid rgba(0,0,0,0.02);
         }
         .skill-mini-card:hover {
-            border-color: #c5a059;
             background: #fcfaf7;
-            transform: scale(1.05);
-            box-shadow: 0 10px 15px -3px rgba(197, 160, 89, 0.2);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mastery Library Style */
+        .mastery-item {
+            background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 18px;
+            padding: 1.25rem; transition: all 0.2s ease; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .mastery-item:hover { 
+            background: #fff; 
+            border-color: var(--gold-primary); 
+            transform: translateX(8px); 
+            box-shadow: 4px 6px 20px rgba(0,0,0,0.05); 
+        }
+
+        /* --- 4. ปรับปรุงหน้าจอทำข้อสอบ (Focus Mode) --- */
+        .question-box {
+            background: #ffffff; border-radius: 32px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+            border: 1px solid rgba(197, 160, 89, 0.15);
+            position: relative; overflow: hidden;
+        }
+        .question-box::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+            background: linear-gradient(90deg, var(--gold-primary), var(--gold-light), var(--gold-primary));
+        }
+
+        .answer-option-btn {
+            background: #ffffff; border: 2px solid #f1f5f9; padding: 1.5rem;
+            border-radius: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; gap: 1.25rem; font-size: 1.25rem;
+            font-weight: 700; color: #1e293b; width: 100%; min-height: 90px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .answer-option-btn:hover:not(:disabled) { 
+            border-color: var(--gold-primary); background: #fcfaf7; 
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 10px 20px rgba(197, 160, 89, 0.1);
+        }
+
+        .option-prefix {
+            width: 40px; height: 40px; background: #f1f5f9; color: #64748b;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 0.9rem; flex-shrink: 0;
+        }
+        .answer-option-btn:hover .option-prefix { background: var(--gold-primary); color: white; }
+
+        /* --- 5. Mouse Pointer & Components --- */
+        .clickable, button, [onclick], .skill-mini-card, .sem-btn, .answer-option-btn, .mastery-item { 
+            cursor: pointer !important; 
+        }
+
+        .sem-btn-wrapper { display: flex; gap: 4px; background-color: #f1f5f9; padding: 4px; border-radius: 12px; width: 140px; height: 40px; }
+        .sem-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border-radius: 9px; transition: all 0.2s ease; border: none; }
+        .sem-active { background-color: #ffffff !important; color: var(--gold-primary) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        .radar-focus {
+            background: #fff; border: 1px solid rgba(197, 160, 89, 0.2);
+            box-shadow: inset 0 0 30px rgba(197, 160, 89, 0.05), 0 15px 35px rgba(0,0,0,0.03);
         }
     </style>
 </head>
-<body class="bg-pattern text-slate-800">
+<body class="text-slate-800">
 
-    <header class="h-16 bg-white/90 backdrop-blur sticky top-0 z-40 px-8 flex justify-between items-center border-b-2 border-gold-accent shadow-md">
+    <header class="h-16 bg-white/95 backdrop-blur sticky top-0 z-40 px-8 flex justify-between items-center border-b-2 border-gold-accent shadow-sm">
         <div class="flex items-center gap-4">
-            <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-xl shadow-lg text-yellow-400 font-bold">GA</div>
+            <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-xl shadow-lg text-yellow-400 font-bold royal-text">MA</div>
             <div>
-                <h1 class="text-lg font-bold text-slate-900 leading-none">THE GRAND ARCHIVE</h1>
-                <p class="text-[10px] text-gold-dark font-bold tracking-[0.2em] uppercase">Academic Mastery System</p>
+                <h1 class="text-lg font-extrabold text-slate-900 leading-none royal-text uppercase">The Math Archive</h1>
+                <p class="text-[9px] text-gold-dark font-bold tracking-[0.2em] uppercase">Academic Mastery System</p>
             </div>
         </div>
         <div class="flex items-center gap-6">
-            <button id="btn-logout" class="bg-red-50 text-red-600 px-4 py-2 rounded-md text-xs font-extrabold hover:bg-red-600 hover:text-white transition-all">LOGOUT</button>
+            <button id="btn-logout" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-xs font-black hover:bg-red-600 hover:text-white transition-all uppercase tracking-widest">Logout</button>
         </div>
     </header>
 
     <main id="app-content" class="p-6 flex-1 dashboard-container">
         
-        <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center">
-            <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-md w-full border-t-8 border-gold-accent text-center fade-in">
-                <div class="text-6xl mb-6">🖋️</div>
-                <h2 class="text-2xl font-bold text-slate-900 mb-2 font-serif">เข้าสู่หอจดหมายเหตุ</h2>
-                <p class="text-slate-500 text-sm mb-8 font-medium">กรุณาระบุตัวตนเพื่อดำเนินการต่อ</p>
-                <form id="login-form" class="space-y-4">
-                    <input type="text" id="student-id" class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-bold text-center text-lg focus:border-navy-royal outline-none transition-all" placeholder="Student ID / Email" required>
-                    <input type="password" id="password" class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-bold text-center text-lg focus:border-navy-royal outline-none transition-all" placeholder="Password" required>
-                    <div id="login-error" class="hidden text-red-600 text-xs font-extrabold bg-red-50 py-2 rounded">ID หรือรหัสผ่านไม่ถูกต้อง</div>
-                    <button type="submit" class="w-full btn-archive py-4 rounded-xl text-lg font-bold shadow-xl">ENTER ARCHIVE</button>
+        <div id="login-screen" class="hidden fixed inset-0 z-50 bg-slate-900/98 backdrop-blur-md flex items-center justify-center">
+            <div class="bg-white p-12 rounded-[40px] shadow-2xl max-w-md w-full border-t-[10px] border-gold-accent text-center">
+                <div class="text-7xl mb-8">🖋️</div>
+                <h2 class="text-2xl font-black text-slate-900 mb-2 royal-text">ACCESS ARCHIVE</h2>
+                <form id="login-form" class="space-y-5">
+                    <input type="text" id="student-id" class="w-full p-4 border-2 border-slate-100 rounded-2xl bg-slate-50 font-bold text-center text-lg outline-none focus:border-gold-accent transition-all" placeholder="Student ID / Email" required>
+                    <input type="password" id="password" class="w-full p-4 border-2 border-slate-100 rounded-2xl bg-slate-50 font-bold text-center text-lg outline-none focus:border-gold-accent transition-all" placeholder="Password" required>
+                    <div id="login-error" class="hidden text-red-600 text-xs font-bold bg-red-50 py-3 rounded-xl">ID หรือรหัสผ่านไม่ถูกต้อง</div>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-2xl text-lg font-black shadow-xl hover:bg-black transition-all uppercase tracking-widest">Open Archive</button>
                 </form>
             </div>
         </div>
 
         <div id="main-app" class="hidden space-y-8 fade-in">
-            
-            <div class="grid grid-cols-12 gap-6">
-                
+            <div class="grid grid-cols-12 gap-8">
                 <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                    <div class="balanced-card p-6">
-                        <div class="flex items-center gap-6 mb-8">
-                            <div class="relative">
-                                <img id="user-avatar" src="" class="w-24 h-24 rounded-2xl border-4 border-gold-accent shadow-xl bg-white object-cover" alt="Avatar">
-                                <div class="absolute -bottom-2 -right-2 bg-navy-royal text-white text-[10px] px-2 py-1 rounded-md font-bold">SCHOLAR</div>
+                    <div class="balanced-card p-8">
+                        <div class="flex items-center gap-6 mb-8 w-full overflow-hidden">
+                            <div class="avatar-frame-container">
+                                <div class="avatar-inner-border"><img id="user-avatar" src="" alt="Avatar"></div>
+                                <div class="absolute -bottom-1 -right-1 bg-slate-900 text-yellow-400 text-[8px] px-3 py-1 rounded-full font-black shadow-lg border border-gold-accent uppercase">Scholar</div>
                             </div>
-                            <div>
-                                <h2 id="display-name" class="text-2xl font-bold text-slate-900 leading-tight">...</h2>
-                                <span id="display-grade" class="inline-block bg-slate-100 text-gold-dark text-xs font-extrabold px-3 py-1 rounded-full mt-2 uppercase tracking-tighter">Loading Grade...</span>
+                            <div class="min-w-0 flex-1">
+                                <h2 id="display-name" class="text-lg font-bold text-slate-900 leading-tight truncate">...</h2>
+                                <span id="display-grade" class="inline-block bg-slate-100 text-gold-dark text-[9px] font-black px-3 py-1 rounded-full mt-2 uppercase tracking-widest">Student</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="text-center p-3 bg-slate-50 rounded-xl">
-                                <p class="text-2xl font-bold text-navy-royal" id="stat-total-mission">0</p>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Tests</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                <p class="text-xl font-black text-navy-royal" id="stat-total-mission">0</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ภารกิจ</p>
                             </div>
-                            <div class="text-center p-3 bg-slate-50 rounded-xl border-x border-slate-200">
-                                <p class="text-2xl font-bold text-emerald-600" id="stat-accuracy">0%</p>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Accurate</p>
+                            <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100 border-x-0">
+                                <p class="text-xl font-black text-emerald-600" id="stat-accuracy">0%</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ความแม่น</p>
                             </div>
-                            <div class="text-center p-3 bg-slate-50 rounded-xl">
-                                <p class="text-2xl font-bold text-gold-dark" id="stat-questions">0</p>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Mastered</p>
+                            <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                <p class="text-xl font-black text-gold-dark" id="stat-questions">0</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">แต้มสะสม</p>
                             </div>
                         </div>
                     </div>
 
-                    <div onclick="startAdaptiveTest()" class="h-full bg-slate-900 rounded-2xl p-8 relative overflow-hidden group cursor-pointer border-b-4 border-gold-accent flex items-center shadow-xl hover:scale-[1.02] transition-all">
+                    <div onclick="startAdaptiveTest()" class="h-full bg-slate-900 rounded-[32px] p-8 relative overflow-hidden group border-b-[6px] border-gold-accent flex items-center shadow-2xl hover:scale-[1.01] transition-all clickable">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')] opacity-20"></div>
-                        <div class="relative z-10 flex flex-col justify-center">
-                            <h3 class="text-2xl font-bold text-white mb-2 italic">Smart Mission</h3>
-                            <p class="text-slate-400 text-sm font-medium mb-4">ปลดล็อกศักยภาพด้วย AI ปรับระดับโจทย์ตามความเก่ง</p>
-                            <span class="inline-block w-fit bg-gold-accent text-white px-8 py-2 rounded-lg font-extrabold text-sm shadow-lg group-hover:bg-white group-hover:text-slate-900 transition-all">BEGIN TRIAL</span>
+                        <div class="relative z-10">
+                            <h3 class="text-2xl font-black text-white mb-2 royal-text tracking-tight uppercase">Smart Mission</h3>
+                            <p class="text-slate-400 text-sm font-medium mb-6">เริ่มการทดสอบแบบปรับระดับอัจฉริยะ</p>
+                            <span class="inline-block w-fit bg-gold-accent text-white px-10 py-3 rounded-2xl font-black text-xs shadow-lg group-hover:bg-white group-hover:text-slate-900 transition-all uppercase tracking-widest">Begin Trial</span>
                         </div>
-                        <div class="ml-auto text-6xl opacity-30 group-hover:opacity-100 transition-all transform group-hover:rotate-12">⚡</div>
+                        <div class="ml-auto text-7xl opacity-20 group-hover:opacity-100 transition-all transform group-hover:rotate-12">⚡</div>
                     </div>
                 </div>
 
-                <div class="col-span-12 lg:col-span-5">
-                    <div class="balanced-card radar-focus p-8 flex flex-col items-center justify-center relative overflow-hidden">
-                        <div class="absolute top-4 left-6">
-                            <h3 class="text-xs font-extrabold text-gold-dark uppercase tracking-[0.3em]">Mastery Analysis</h3>
+                <div class="col-span-12 lg:col-span-8">
+                    <div class="balanced-card radar-focus p-10 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div class="absolute top-6 left-8">
+                            <h3 class="text-[10px] font-black text-gold-dark uppercase tracking-[0.4em] royal-text">Mastery Analysis</h3>
                         </div>
-                        <div class="w-full flex items-center justify-center py-4">
-                            <svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-auto max-w-[400px] drop-shadow-2xl"></svg>
+                        <div class="w-full flex items-center justify-center py-6">
+                            <svg id="spider-chart" viewBox="0 0 450 450" class="w-full h-auto max-w-[360px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.08)]"></svg>
                         </div>
-                        <p class="text-[11px] text-slate-400 font-bold mt-4">วิเคราะห์ทักษะอ้างอิงจากประวัติการทำข้อสอบ</p>
-                    </div>
-                </div>
-
-                <div class="col-span-12 lg:col-span-3">
-                    <div class="balanced-card flex flex-col">
-                        <div class="p-5 border-b border-slate-100 bg-slate-50 rounded-t-xl flex justify-between items-center">
-                            <h3 class="font-bold text-slate-700 text-lg">📖 Library</h3>
-                            <div class="sem-btn-wrapper">
-                                <button onclick="setSemester('1')" id="sem-btn-1" class="sem-btn sem-active">SEM 1</button>
-                                <button onclick="setSemester('2')" id="sem-btn-2" class="sem-btn sem-inactive">SEM 2</button>
-                            </div>
-                        </div>
-                        <div id="chapter-list" class="p-4 space-y-3 overflow-y-auto max-h-[420px] custom-scroll">
-                            </div>
                     </div>
                 </div>
             </div>
 
-            <div class="balanced-card p-8">
-                <div class="flex items-center justify-between mb-8">
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-3">
-                        <span class="w-8 h-1 bg-gold-accent inline-block"></span>
-                        ทักษะเฉพาะทาง (Core Competencies)
-                    </h3>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Track your learning journey</p>
+            <div class="balanced-card p-10">
+                <div class="flex items-center gap-4 mb-10">
+                    <span class="w-2 h-8 bg-gold-primary rounded-full"></span>
+                    <h3 class="text-2xl font-black text-slate-900 tracking-tight uppercase royal-text">Core Competencies</h3>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                    <div onclick="startSpecificTest('numerical')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">🧮</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Numerical</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-numerical">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-numerical" class="h-full bg-blue-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-                    
-                    <div onclick="startSpecificTest('algebraic')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">⚖️</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Algebraic</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-algebraic">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-algebraic" class="h-full bg-yellow-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-
-                    <div onclick="startSpecificTest('visual')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">📐</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Visual</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-visual">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-visual" class="h-full bg-emerald-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-
-                    <div onclick="startSpecificTest('data')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">📊</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Data</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-data">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-data" class="h-full bg-rose-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-
-                    <div onclick="startSpecificTest('logical')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">🧩</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Logical</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-logical">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-logical" class="h-full bg-indigo-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-
-                    <div onclick="startSpecificTest('applied')" class="skill-mini-card group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-2xl">🛠️</span>
-                            <span class="text-[10px] font-extrabold text-slate-400 group-hover:text-navy-royal transition-all uppercase">Applied</span>
-                        </div>
-                        <div class="text-center mb-3">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
-                            <p class="text-3xl font-bold text-slate-800" id="lv-applied">1</p>
-                        </div>
-                        <div class="h-1 bg-slate-100 rounded-full overflow-hidden"><div id="bar-applied" class="h-full bg-orange-500 w-0 transition-all duration-1000"></div></div>
-                    </div>
-                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8" id="skills-grid"></div>
             </div>
             
-            <div class="balanced-card p-8">
-                <h3 class="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">📜 บันทึกความเชี่ยวชาญรายบท</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="center-stats-list">
+            <div class="balanced-card p-10 mb-10">
+                <div class="flex justify-between items-center mb-10">
+                    <div class="flex items-center gap-4">
+                        <span class="w-2 h-8 bg-gold-accent rounded-full"></span>
+                        <h3 class="text-2xl font-black text-slate-800 uppercase royal-text italic">Mastery Library</h3>
                     </div>
+                    <div class="sem-btn-wrapper">
+                        <button onclick="setSemester('1')" id="sem-btn-1" class="sem-btn sem-active">SEM 1</button>
+                        <button onclick="setSemester('2')" id="sem-btn-2" class="sem-btn sem-inactive">SEM 2</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="chapter-list"></div>
             </div>
         </div>
 
-        <div id="content-test" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-lg">
-            <div class="w-full max-w-5xl h-full md:h-[90vh] bg-white md:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-                <div class="bg-slate-900 p-6 flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <div class="text-yellow-400 text-3xl">⚔️</div>
+        <div id="content-test" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/98 backdrop-blur-2xl p-4 md:p-8">
+            <div class="w-full max-w-5xl h-full md:h-auto md:max-h-[95vh] flex flex-col overflow-hidden rounded-[40px] shadow-2xl">
+                
+                <div class="bg-slate-900 p-6 md:px-10 flex justify-between items-center text-white border-b-4 border-gold-primary">
+                    <div class="flex items-center gap-6">
+                        <div class="text-gold-accent text-4xl">⚔️</div>
                         <div>
-                            <h3 id="test-level-title" class="font-bold text-xl text-white">Mission in Progress</h3>
-                            <p class="text-xs text-slate-400 font-extrabold uppercase">Step <span id="current-question-num">1</span> of <span id="total-questions">10</span></p>
+                            <h3 id="test-level-title" class="font-black text-2xl text-white royal-text uppercase tracking-tight italic">Active Mission</h3>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-yellow-500 font-bold tracking-widest">QUESTION</span>
+                                <div class="text-sm font-black tracking-tighter">
+                                    <span id="current-question-num" class="text-yellow-400 text-lg">1</span> / <span id="total-questions" class="opacity-50">10</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
-                        <div id="timer" class="text-2xl font-mono font-bold text-yellow-400">00:00</div>
+                    <div class="bg-black/30 px-8 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+                        <div id="timer" class="text-3xl font-mono font-black text-yellow-400">00:00</div>
                     </div>
                 </div>
-                <div class="h-2 bg-slate-800 w-full">
-                    <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-500 shadow-[0_0_10px_#c5a059]" style="width: 0%"></div>
+                
+                <div class="h-1.5 bg-slate-800 w-full relative">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-gold-primary via-gold-light to-gold-primary transition-all duration-700" style="width: 0%"></div>
                 </div>
-                <div class="flex-1 p-8 md:p-12 overflow-y-auto flex flex-col justify-center items-center">
-                    <div id="question-display" class="math-content text-2xl md:text-4xl font-bold text-slate-800 leading-relaxed text-center max-w-3xl">
-                        กำลังอัญเชิญคำถาม...
+
+                <div class="flex-1 bg-[#fcfaf7] p-8 md:p-14 overflow-y-auto custom-scroll">
+                    <div class="max-w-4xl mx-auto flex flex-col gap-10">
+                        <div class="question-box p-10 md:p-16 text-center">
+                            <div id="question-display" class="math-content text-3xl md:text-5xl font-black text-slate-800 leading-tight tracking-tight">
+                                กำลังอัญเชิญคำถาม...
+                            </div>
+                        </div>
+
+                        <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            </div>
                     </div>
                 </div>
-                <div id="answer-options" class="math-content p-8 md:p-12 bg-slate-50 border-t-2 border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                <div class="p-6 bg-white border-t border-slate-100 flex justify-center">
-                    <button id="btn-quit-test" class="text-xs font-black text-slate-400 hover:text-red-600 tracking-[0.2em] transition-all">ABORT MISSION</button>
+
+                <div class="p-8 bg-white flex justify-center border-t border-slate-50">
+                    <button id="btn-quit-test" class="text-[11px] font-black text-slate-400 hover:text-red-500 tracking-[0.4em] transition-all uppercase">Abort Mission</button>
                 </div>
             </div>
         </div>
 
         <div id="result-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-xl">
-            <div class="bg-white p-12 rounded-3xl shadow-2xl text-center max-w-md w-full relative border-b-8 border-gold-accent fade-in">
-                <div class="text-8xl mb-6">🏆</div>
-                <h2 class="text-3xl font-bold text-slate-900 mb-2 italic">Victory Achieved!</h2>
-                <div class="bg-slate-50 rounded-2xl p-8 mb-8 mt-6 border border-slate-100 shadow-inner">
-                    <div class="text-7xl font-black text-navy-royal mb-2" id="result-percent">0%</div>
-                    <p class="text-gold-dark font-extrabold tracking-widest uppercase text-xs">Final Mastery Score</p>
-                    <div class="h-px bg-slate-200 my-4"></div>
-                    <p class="text-slate-500 text-sm font-bold">โจทย์ที่ตอบถูก: <span id="result-score" class="text-slate-900">0/0</span></p>
+            <div class="bg-white p-14 rounded-[50px] shadow-2xl text-center max-w-lg w-full relative border-b-[12px] border-gold-accent fade-in">
+                <div class="text-9xl mb-8">🏆</div>
+                <h2 class="text-4xl font-black text-slate-900 mb-3 royal-text tracking-tighter uppercase">Mission Complete</h2>
+                <div class="bg-slate-50 rounded-[40px] p-10 mb-10 border border-slate-100 shadow-inner">
+                    <div class="text-8xl font-black text-navy-royal mb-2 tracking-tighter" id="result-percent">0%</div>
+                    <p class="text-gold-dark font-black tracking-[0.3em] uppercase text-[11px]">Mastery Level</p>
+                    <div class="h-px bg-slate-200 my-8"></div>
+                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">โจทย์ที่ตอบถูก: <span id="result-score" class="text-slate-900">0/0</span></p>
                 </div>
-                <button onclick="window.closeResultModal()" class="w-full btn-archive py-5 rounded-2xl font-black text-xl shadow-2xl hover:scale-[1.02] transition-all">RETURN TO HALL</button>
+                <button onclick="window.closeResultModal()" class="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xl shadow-2xl hover:bg-black transition-all tracking-widest uppercase">Return to Hall</button>
             </div>
         </div>
 
