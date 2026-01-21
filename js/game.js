@@ -14,78 +14,91 @@ export class MathGame {
         this.activeCompetency = null;  // [NEW] ตัวแปรเก็บชื่อทักษะปัจจุบัน
     }
 
-    async start(mode, userGrade, specificCompetency = null, semester = '1', chapterName = null) {
-        this.isLoading = true;
-        this.mode = mode;
-        this.currentSemester = semester;
+    // เพิ่มพารามิเตอร์ userLevel เข้าไปในฟังก์ชัน (กำหนด Default เป็น "1")
+async start(mode, userGrade, specificCompetency = null, semester = '1', chapterName = null, userLevel = "1") {
+    this.isLoading = true;
+    this.mode = mode;
+    this.currentSemester = semester;
+    
+    this.activeChapterName = chapterName;
+    this.activeCompetency = specificCompetency;
+
+    this.currentIndex = 0;
+    this.correctCount = 0;
+    this.skippedCount = 0;
+    this.questions = [];
+    this.startTime = Date.now();
+
+    try {
+        console.log(`Starting Game -> Mode: ${mode}, Level: ${userLevel}, Grade: ${userGrade}`);
         
-        // [FIX] บันทึกชื่อบทและทักษะไว้ใช้ตอนจบเกม
-        this.activeChapterName = chapterName;
-        this.activeCompetency = specificCompetency;
+        // 1. ลองดึงโจทย์ตาม Level ที่ส่งมา
+        let data = await this.fetchQuestions(mode, userGrade, semester, chapterName, specificCompetency, userLevel);
 
-        this.currentIndex = 0;
-        this.correctCount = 0;
-        this.skippedCount = 0;
-        this.questions = [];
-        this.startTime = Date.now();
-
-        try {
-            console.log(`Starting Game -> Mode: ${mode}, Grade: ${userGrade}, Sem: ${semester}, Chapter: ${chapterName || 'All'}`);
+        // 2. [Fallback Logic] ถ้าหาเลเวลที่ต้องการไม่เจอ (data ว่าง) ให้ลองหาเลเวลที่ต่ำกว่า
+        if (!data || data.length === 0) {
+            console.warn(`No questions found for Level ${userLevel}. Trying Fallback to lower levels...`);
             
-            // สร้าง query พื้นฐาน
-            let query = supabase
-                .from('advanced_questions')
-                .select('*')
-                .eq('grade', userGrade)
-                .eq('semester', semester.toString()); // มั่นใจว่าเป็น String
-
-            // --- [จุดที่เพิ่มเข้าไป] บังคับให้ดึงเฉพาะ Level 1 เท่านั้น ---
-            // หมายเหตุ: ใน DB เราเก็บเป็น Text ดังนั้นต้องใช้ "1"
-            query = query.eq('level', "1"); 
-
-            // กรองเพิ่มเติมตามโหมดที่เลือก
-            if (mode === 'chapter' && chapterName) {
-                query = query.eq('chapter', chapterName);
-            } 
-            else if (mode === 'specific' && specificCompetency) {
-                query = query.eq('competency', specificCompetency);
-            } 
-
-            const { data, error } = await query;
-
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                console.warn("No questions found.");
-                this.questions = [];
-                this.isLoading = false;
-                return;
+            // วนลูปถอยหลังหาเลเวลที่ต่ำกว่า (เช่น ถ้าหา Lv.3 ไม่เจอ ให้หา 2 หรือ 1 ตามลำดับ)
+            for (let fallbackLv = parseInt(userLevel) - 1; fallbackLv >= 1; fallbackLv--) {
+                data = await this.fetchQuestions(mode, userGrade, semester, chapterName, specificCompetency, fallbackLv.toString());
+                if (data && data.length > 0) {
+                    console.log(`Fallback Success! Found questions at Level ${fallbackLv}`);
+                    break;
+                }
             }
-
-            const formattedQuestions = data.map(q => ({
-                id: q.id,
-                questionText: q.question_text,
-                mathExpression: q.math_expression,
-                imageUrl: q.question_image_url,
-                options: q.options,
-                correctIndex: q.correct_option_index,
-                competency: q.competency,
-                chapter: q.chapter,
-                level: q.level,
-                userResult: null,
-                userSkipped: false
-            }));
-
-            this.questions = this.shuffleArray(formattedQuestions).slice(0, 10);
-            
-        } catch (error) {
-            console.error("Game Load Error:", error);
-            alert("Error: " + error.message);
-        } finally {
-            this.isLoading = false;
         }
+
+        // 3. ถ้าหาจนถึงที่สุดแล้วยังไม่เจอจริงๆ
+        if (!data || data.length === 0) {
+            console.error("Critical: No questions found at any level.");
+            this.questions = [];
+            return;
+        }
+
+        const formattedQuestions = data.map(q => ({
+            id: q.id,
+            questionText: q.question_text,
+            mathExpression: q.math_expression,
+            imageUrl: q.question_image_url,
+            options: q.options,
+            correctIndex: q.correct_option_index,
+            competency: q.competency,
+            chapter: q.chapter,
+            level: q.level,
+            userResult: null,
+            userSkipped: false
+        }));
+
+        this.questions = this.shuffleArray(formattedQuestions).slice(0, 10);
+        
+    } catch (error) {
+        console.error("Game Load Error:", error);
+    } finally {
+        this.isLoading = false;
+    }
+}
+
+// แยกฟังก์ชันดึงข้อมูลออกมาเพื่อให้เรียกซ้ำได้ (Helper Function)
+async fetchQuestions(mode, grade, sem, chapter, competency, lv) {
+    let query = supabase
+        .from('advanced_questions')
+        .select('*')
+        .eq('grade', grade)
+        .eq('semester', sem.toString())
+        .eq('level', lv.toString());
+
+    if (mode === 'chapter' && chapter) {
+        query = query.eq('chapter', chapter);
+    } 
+    else if (mode === 'specific' && competency) {
+        query = query.eq('competency', competency);
     }
 
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+}
     shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
