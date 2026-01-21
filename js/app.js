@@ -43,16 +43,43 @@ window.closeResultModal = () => {
     // โหลดข้อมูลใหม่
     loadHistoryData(); 
 };
+// แก้ไขฟังก์ชัน runGame เพื่อให้ดึง Level ปัจจุบันของผู้เล่นส่งเข้าเกม
 async function runGame(mode, competency = null, chapterName = null) {
     if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนครับ");
+
+    // --- [จุดสำคัญ] ดึงค่า Level ปัจจุบันของผู้เล่นจาก UI ---
+    let currentLevel = "1"; // ค่าเริ่มต้น
+    
+    if (mode === 'specific' && competency) {
+        // ดึงเลเวลจากตัวเลขบน Skill Card เช่น id="lv-numerical"
+        const lvEl = document.getElementById(`lv-${competency}`);
+        currentLevel = lvEl ? lvEl.textContent : "1";
+    } else if (mode === 'adaptive') {
+        // สำหรับโหมด Adaptive รวม อาจจะดึงเลเวลเฉลี่ยหรือเริ่มที่ 1 เพื่อประเมินใหม่
+        currentLevel = "1"; 
+    } else if (mode === 'chapter') {
+        // โหมดบทเรียน ปกติจะเริ่มที่ Level 1 เพื่อปูพื้นฐาน
+        currentLevel = "1";
+    }
+
     const targetGrade = userRealGrade || 'M.1';
-    await game.start(mode, targetGrade, competency, currentSem, chapterName);
+
+    // ส่ง currentLevel เป็นพารามิเตอร์ตัวที่ 6 เข้าไปใน game.start
+    await game.start(mode, targetGrade, competency, currentSem, chapterName, currentLevel);
+    
+    // ตรวจสอบว่ามีโจทย์หรือไม่ (ถ้าหาทุก Level แล้วยังไม่มีจริงๆ)
     if (!game.questions || game.questions.length === 0) {
-        alert(`ไม่พบข้อสอบสำหรับชั้น ${formatGrade(targetGrade)} เทอม ${currentSem}`);
+        alert(`ไม่พบข้อสอบสำหรับชั้น ${formatGrade(targetGrade)} ในขณะนี้`);
         return;
     }
+    
     switchTab('test');
     updateTestHeader(mode, competency, chapterName, targetGrade);
+    
+    // เพิ่มการโชว์ Level บนหัวข้อตอนสอบ (เพื่อให้เด็กรู้ว่าตอนนี้ทำระดับไหนอยู่)
+    const titleEl = document.getElementById('test-level-title');
+    if (titleEl) titleEl.innerHTML += ` <span class="text-sm bg-yellow-600/20 px-2 py-0.5 rounded text-yellow-500 ml-2">Lv.${game.currentLevel || currentLevel}</span>`;
+    
     updateQuestionUI();
     startTimer();
 }
@@ -302,12 +329,20 @@ function renderLessonLibrary() {
 }
 
 function updateSemesterUI() {
-    const activeClass = "rounded-md text-sm font-bold bg-slate-800 text-white shadow py-2 transition-all";
-    const inactiveClass = "rounded-md text-sm font-bold text-slate-500 hover:bg-white/50 py-2 transition-all";
     const btn1 = document.getElementById('sem-btn-1');
     const btn2 = document.getElementById('sem-btn-2');
-    if(btn1) btn1.className = currentSem === '1' ? activeClass : inactiveClass;
-    if(btn2) btn2.className = currentSem === '2' ? activeClass : inactiveClass;
+    
+    // ตรวจสอบว่ามีปุ่มอยู่ในหน้าจอจริงหรือไม่ก่อนรัน
+    if (!btn1 || !btn2) return;
+
+    if (currentSem === '1') {
+        // ใช้ชื่อคลาสที่ตรงกับที่เราเขียนล็อกขนาดไว้ใน index.html
+        btn1.className = "sem-btn sem-active";
+        btn2.className = "sem-btn sem-inactive";
+    } else {
+        btn1.className = "sem-btn sem-inactive";
+        btn2.className = "sem-btn sem-active";
+    }
 }
 
 function updateUserDisplay() {
