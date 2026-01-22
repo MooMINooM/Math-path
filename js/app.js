@@ -164,7 +164,6 @@ async function loadHistoryData() {
     if(!currentUser) return;
     const { data: history, error } = await getTestHistory(currentUser.id);
     
-    // อัปเดต Mastery Library (ยุบรวมรายการบทเรียนและคะแนน)
     updateMasteryLibrary(history || []);
 
     if (error || !history || history.length === 0) {
@@ -179,12 +178,20 @@ async function loadHistoryData() {
         const stats = h.competency_stats || {};
         ALL_COMPETENCIES.forEach(k => {
             if (stats[k]) {
-                const sessionCorrect = typeof stats[k] === 'object' ? (stats[k].correct || 0) : (parseInt(stats[k]) || 0);
-                currentXPs[k] = Math.max(0, Math.min(400, (currentXPs[k] || 0) + (sessionCorrect * 10)));
+                // ดึงจำนวนข้อที่ถูกและผิดจาก stats ของทักษะนั้นๆ
+                const correct = typeof stats[k] === 'object' ? (stats[k].correct || 0) : (parseInt(stats[k]) || 0);
+                // คำนวณข้อที่ผิด (สมมติว่า 1 รอบมี 10 ข้อ หรือใช้โครงสร้างข้อมูลที่คุณเก็บไว้)
+                const totalInSession = typeof stats[k] === 'object' ? (stats[k].total || 10) : 10;
+                const wrong = totalInSession - correct;
+
+                // [สูตรใหม่] ถูก +5, ผิด -5
+                const sessionXP = (correct * 5) - (wrong * 5);
+                
+                // รวม XP โดยล็อกค่าไว้ไม่ให้ต่ำกว่า 0 และไม่เกิน 400 (Max Level 5)
+                currentXPs[k] = Math.max(0, Math.min(400, (currentXPs[k] || 0) + sessionXP));
             }
         });
     });
-
     const dailyPenalty = calculateDailyDecay(history);
     const radarScores = {};
     ALL_COMPETENCIES.forEach(k => {
@@ -387,3 +394,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth(); 
     setupEventListeners(); 
 });
+
