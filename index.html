@@ -16,7 +16,7 @@
         :root {
             --font-main: 'Sarabun', sans-serif;
             --font-accent: 'Playfair Display', serif;
-            --gold-primary: #c5a059;
+            --gold-primary: #000000;
             --gold-light: #ecd4a1;
             --archive-bg: #efede5; /* พื้นหลังที่ช่วยให้การ์ดขาวเด่นขึ้น */
         }
@@ -38,6 +38,48 @@
         
         .dashboard-container { max-width: 1400px; margin: 0 auto; width: 100%; }
 
+        /* --- MathML & MathLive Mastery CSS --- */
+        /* บังคับ MathML ให้ใช้ Sarabun และปรับสีทอง */
+        math, mtext, mi, mn, mo, msup, mfrac {
+            font-family: 'Sarabun', sans-serif !important;
+            font-style: normal !important;
+            color: var(--gold-primary);
+        }
+
+        /* ปรับสไตล์ตัวเลขและตัวแปรใน MathML */
+        mn, mi {
+            font-weight: 700;
+        }
+
+        /* ปรับแต่ง Math-field (MathLive) เพิ่มเติม */
+        math-field {
+            --font-family: 'Sarabun', sans-serif !important;
+            font-family: 'Sarabun', sans-serif !important;
+            background: transparent;
+            border: none;
+            color: var(--gold-primary);
+            width: 100%;
+            outline: none;
+        }
+
+        math-field::part(virtual-keyboard-toggle),
+        math-field::part(menu-toggle) { 
+            display: none; 
+        }
+
+        /* เฉพาะส่วนแสดงโจทย์ใน Question Box */
+        #question-display math-field {
+            font-size: 3.5rem;
+            --caret-color: transparent;
+            text-align: center;
+        }
+
+        /* ในปุ่มตัวเลือกคำตอบ */
+        .answer-option-btn math-field {
+            font-size: 1.5rem;
+            pointer-events: none;
+        }
+
         /* --- 2. กรอบรูปโปรไฟล์ Royal Gold --- */
         .avatar-frame-container {
             position: relative; width: 85px; height: 85px; flex-shrink: 0;
@@ -58,7 +100,6 @@
         }
         .balanced-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(197, 160, 89, 0.15); border-color: var(--gold-primary); }
 
-        /* จุดที่แก้: การแบ่งแยกการ์ดทักษะให้ไม่กลืนกัน */
         .skill-mini-card {
             border-left: 6px solid var(--gold-primary); 
             border-radius: 16px !important;
@@ -75,7 +116,6 @@
             box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Mastery Library Style */
         .mastery-item {
             background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 18px;
             padding: 1.25rem; transition: all 0.2s ease; cursor: pointer;
@@ -95,6 +135,10 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.08);
             border: 1px solid rgba(197, 160, 89, 0.15);
             position: relative; overflow: hidden;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .question-box::before {
             content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
@@ -270,13 +314,13 @@
                 <div class="flex-1 bg-[#fcfaf7] p-8 md:p-14 overflow-y-auto custom-scroll">
                     <div class="max-w-4xl mx-auto flex flex-col gap-10">
                         <div class="question-box p-10 md:p-16 text-center">
-                            <div id="question-display" class="math-content text-3xl md:text-5xl font-black text-slate-800 leading-tight tracking-tight">
-                                กำลังอัญเชิญคำถาม...
+                            <div id="question-display" class="flex flex-col gap-6 w-full items-center justify-center">
+                                <div class="text-3xl md:text-4xl font-black text-slate-800">กำลังอัญเชิญคำถาม...</div>
                             </div>
                         </div>
 
                         <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -305,4 +349,3 @@
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
-
