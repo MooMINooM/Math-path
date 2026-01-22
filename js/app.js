@@ -106,59 +106,59 @@ function formatGrade(gradeCode) {
 /**
  * [อัปเดต] รองรับ MathML / MathLive เพื่อแสดงเลขยกกำลัง
  */
+/**
+ * [อัปเดตฉบับเสถียร] เรนเดอร์ MathML และคุมฟอนต์ Sarabun
+ */
 function updateQuestionUI() { 
     const q = game.getCurrentQuestion(); 
     if (!q) { finishTest(); return; }
 
+    // 1. อัปเดตตัวเลขข้อ
     document.getElementById('current-question-num').textContent = game.currentIndex + 1;
     document.getElementById('total-questions').textContent = game.questions.length;
     
-    // แสดงโจทย์คณิตศาสตร์
+    // 2. จัดการส่วนแสดงผลโจทย์ (Clear & Inject)
     const displayDiv = document.getElementById('question-display');
-    displayDiv.innerHTML = ''; // ล้างค่าเก่า
+    displayDiv.innerHTML = ""; // ล้างค่าเก่าทิ้งทันทีป้องกันการซ้อน
 
-    // ส่วนข้อความโจทย์
-    const textNode = document.createElement('div');
-    textNode.className = "mb-4";
-    textNode.textContent = q.question_text;
-    displayDiv.appendChild(textNode);
+    const questionContainer = document.createElement('div');
+    questionContainer.className = "text-2xl md:text-4xl font-black text-slate-800 leading-relaxed";
+    
+    // ใช้ .innerHTML เพื่อให้เบราว์เซอร์ตีความ Tag <math> เป็น MathML
+    let rawContent = q.question_text || q.questionText || "";
+    questionContainer.innerHTML = rawContent; 
+    
+    displayDiv.appendChild(questionContainer);
 
-    // ส่วนสูตรคณิตศาสตร์ (ถ้ามี math_expression ในฐานข้อมูล)
-    if (q.math_expression) {
-        const mathNode = document.createElement('math-field');
-        mathNode.readOnly = true;
-        mathNode.style.fontSize = "3rem";
-        mathNode.setValue(q.math_expression);
-        displayDiv.appendChild(mathNode);
-    }
+    // 3. อัปเดต Progress Bar
+    document.getElementById('progress-bar').style.width = `${((game.currentIndex + 1) / game.questions.length) * 100}%`;
     
-    document.getElementById('progress-bar').style.width = `${(game.currentIndex / game.questions.length) * 100}%`;
-    
+    // 4. จัดการตัวเลือกคำตอบ
     const container = document.getElementById('answer-options');
     container.innerHTML = '';
-
     const prefixes = ['A', 'B', 'C', 'D'];
     
-    q.options.forEach((opt, idx) => {
+    // รองรับทั้งแบบ Array และ String JSON
+    const options = Array.isArray(q.options) ? q.options : JSON.parse(q.options || "[]");
+
+    options.forEach((opt, idx) => {
         const btn = document.createElement('button');
-        btn.className = 'answer-option-btn flex items-center gap-4';
+        btn.className = 'answer-option-btn';
         
-        // เช็คว่าตัวเลือกมีสัญลักษณ์ทางคณิตศาสตร์หรือไม่ (เช่น ^ หรือ \)
-        const isMath = opt.includes('^') || opt.includes('\\') || opt.includes('{');
-        
+        // สร้างโครงสร้างภายในปุ่ม
         btn.innerHTML = `
             <span class="option-prefix">${prefixes[idx]}</span>
-            <div class="flex-1 text-left">
-                ${isMath ? `<math-field readonly class="pointer-events-none bg-transparent" style="font-size: 1.4rem;">${opt}</math-field>` : opt}
-            </div>
+            <div class="flex-1 text-left option-text">${opt}</div>
         `;
         
         btn.onclick = () => {
             const isCorrect = game.checkAnswer(idx);
             btn.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50');
             btn.style.borderColor = isCorrect ? '#10b981' : '#f43f5e';
+            
             const allBtns = container.querySelectorAll('button');
             allBtns.forEach(b => b.disabled = true);
+
             setTimeout(() => { 
                 if (game.nextQuestion()) updateQuestionUI(); 
                 else finishTest(); 
