@@ -104,7 +104,7 @@ function formatGrade(gradeCode) {
 }
 
 /**
- * [อัปเดต] หน้าแสดงโจทย์แบบ Focus Mode (มี A, B, C, D)
+ * [อัปเดต] รองรับ MathML / MathLive เพื่อแสดงเลขยกกำลัง
  */
 function updateQuestionUI() { 
     const q = game.getCurrentQuestion(); 
@@ -113,8 +113,24 @@ function updateQuestionUI() {
     document.getElementById('current-question-num').textContent = game.currentIndex + 1;
     document.getElementById('total-questions').textContent = game.questions.length;
     
+    // แสดงโจทย์คณิตศาสตร์
     const displayDiv = document.getElementById('question-display');
-    displayDiv.innerHTML = q.questionText; 
+    displayDiv.innerHTML = ''; // ล้างค่าเก่า
+
+    // ส่วนข้อความโจทย์
+    const textNode = document.createElement('div');
+    textNode.className = "mb-4";
+    textNode.textContent = q.question_text;
+    displayDiv.appendChild(textNode);
+
+    // ส่วนสูตรคณิตศาสตร์ (ถ้ามี math_expression ในฐานข้อมูล)
+    if (q.math_expression) {
+        const mathNode = document.createElement('math-field');
+        mathNode.readOnly = true;
+        mathNode.style.fontSize = "3rem";
+        mathNode.setValue(q.math_expression);
+        displayDiv.appendChild(mathNode);
+    }
     
     document.getElementById('progress-bar').style.width = `${(game.currentIndex / game.questions.length) * 100}%`;
     
@@ -125,22 +141,24 @@ function updateQuestionUI() {
     
     q.options.forEach((opt, idx) => {
         const btn = document.createElement('button');
-        btn.className = 'answer-option-btn';
+        btn.className = 'answer-option-btn flex items-center gap-4';
+        
+        // เช็คว่าตัวเลือกมีสัญลักษณ์ทางคณิตศาสตร์หรือไม่ (เช่น ^ หรือ \)
+        const isMath = opt.includes('^') || opt.includes('\\') || opt.includes('{');
+        
         btn.innerHTML = `
             <span class="option-prefix">${prefixes[idx]}</span>
-            <div class="flex-1 text-left">${opt}</div>
+            <div class="flex-1 text-left">
+                ${isMath ? `<math-field readonly class="pointer-events-none bg-transparent" style="font-size: 1.4rem;">${opt}</math-field>` : opt}
+            </div>
         `;
         
         btn.onclick = () => {
             const isCorrect = game.checkAnswer(idx);
-            
-            // แสดง Feedback สีสัน
             btn.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50');
             btn.style.borderColor = isCorrect ? '#10b981' : '#f43f5e';
-            
             const allBtns = container.querySelectorAll('button');
             allBtns.forEach(b => b.disabled = true);
-
             setTimeout(() => { 
                 if (game.nextQuestion()) updateQuestionUI(); 
                 else finishTest(); 
@@ -178,16 +196,10 @@ async function loadHistoryData() {
         const stats = h.competency_stats || {};
         ALL_COMPETENCIES.forEach(k => {
             if (stats[k]) {
-                // ดึงจำนวนข้อที่ถูกและผิดจาก stats ของทักษะนั้นๆ
                 const correct = typeof stats[k] === 'object' ? (stats[k].correct || 0) : (parseInt(stats[k]) || 0);
-                // คำนวณข้อที่ผิด (สมมติว่า 1 รอบมี 10 ข้อ หรือใช้โครงสร้างข้อมูลที่คุณเก็บไว้)
                 const totalInSession = typeof stats[k] === 'object' ? (stats[k].total || 10) : 10;
                 const wrong = totalInSession - correct;
-
-                // [สูตรใหม่] ถูก +5, ผิด -5
                 const sessionXP = (correct * 5) - (wrong * 5);
-                
-                // รวม XP โดยล็อกค่าไว้ไม่ให้ต่ำกว่า 0 และไม่เกิน 400 (Max Level 5)
                 currentXPs[k] = Math.max(0, Math.min(400, (currentXPs[k] || 0) + sessionXP));
             }
         });
@@ -211,9 +223,6 @@ async function loadHistoryData() {
     document.getElementById('stat-questions').textContent = totalQuestions;
 }
 
-/**
- * [อัปเดต] ยุบรวม Library และบันทึกคะแนนเข้าด้วยกัน
- */
 function updateMasteryLibrary(history) {
     const container = document.getElementById('chapter-list');
     if(!container) return;
@@ -280,8 +289,6 @@ function renderSkillsGrid() {
         </div>
     `).join('');
 }
-
-// --- Auth & User Management ---
 
 async function checkAuth() { 
     currentUser = await getCurrentUser(); 
@@ -394,4 +401,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth(); 
     setupEventListeners(); 
 });
-
